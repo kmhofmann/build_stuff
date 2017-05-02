@@ -8,7 +8,7 @@ fi
 
 # TODO: user-configurable source and install directories
 CLONE_DIR=$HOME/devel
-INSTALL_DIR=$HOME/local2
+INSTALL_DIR=$HOME/local
 
 echo "Cloning to ${REPO_DIR}, and installing to ${INSTALL_DIR}..."
 
