@@ -69,8 +69,7 @@ cd ${REPO_DIR}
     --enable-perlinterp=yes \
     --enable-luainterp=yes \
     --enable-gui=gtk2 \
-    --enable-cscope \
-    --prefix=${INSTALL_DIR}
+    --enable-cscope
 make -j${NCPUS}
 make install || { echo "Attempting superuser installation"; sudo make install; }
 
