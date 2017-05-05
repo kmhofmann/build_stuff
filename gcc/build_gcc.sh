@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
 GCC_VERSION="7.1.0"
@@ -48,11 +49,14 @@ elif [ "$(uname -s)" == "Linux" ]; then
 fi
 
 mkdir -p ${TARGET_DIR}
-wget -c -P ${TARGET_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
-wget -c -P ${TARGET_DIR} https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.bz2
+wget -c -P ${TARGET_DIR} http://nl.mirror.babylon.network/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2 || \
+  wget -c -P ${TARGET_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
+wget -c -P ${TARGET_DIR} https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.bz2 || \
+  wget -c -P ${TARGET_DIR} https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
 wget -c -P ${TARGET_DIR} ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-${ISL_VERSION}.tar.bz2
 wget -c -P ${TARGET_DIR} ftp://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
-wget -c -P ${TARGET_DIR} http://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VERSION}.tar.bz2
+wget -c -P ${TARGET_DIR} http://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VERSION}.tar.bz2 || \
+  wget -c -P ${TARGET_DIR} https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
 
 echo "Extracting files..."
 tar xf ${TARGET_DIR}/gcc-${GCC_VERSION}.tar.bz2 -C ${TARGET_DIR}
@@ -70,6 +74,6 @@ CURRENT_DIR=`pwd`
 mkdir -p ${TARGET_BUILD_DIR}
 cd ${TARGET_BUILD_DIR}
 
-${TARGET_DIR}/gcc-${GCC_VERSION}/configure --prefix=${TARGET_INSTALL_DIR} ${OPTS}
+${TARGET_DIR}/gcc-${GCC_VERSION}/configure --prefix=${TARGET_INSTALL_DIR}
 make -j${NCPUS} && make install
 cd ${CURRENT_DIR}
