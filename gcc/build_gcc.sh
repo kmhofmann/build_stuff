@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="6.3.0"
+GCC_VERSION="7.1.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.16.1"
 MPC_VERSION="1.0.3"
-MPFR_VERSION="3.1.4"
+MPFR_VERSION="3.1.5"
 
 if [[ $# -eq 0 ]] ; then
     echo "Usage:"
