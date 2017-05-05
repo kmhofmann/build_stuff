@@ -20,16 +20,16 @@ if [[ $# -eq 0 ]] ; then
     exit 1
 fi
 
-TARGET_DIR=`pwd`
-if [ ! -z "$1" ]; then
+TARGET_DIR=$(pwd)
+if [[ ! -z "$1" ]]; then
   TARGET_DIR=$1
 fi
 
-if [ ! -z "$2" ]; then
+if [[ ! -z "$2" ]]; then
   GCC_VERSION=$2
 fi
 
-if [ -d "$TARGET_DIR" ]; then
+if [[ -d "$TARGET_DIR" ]]; then
   echo "Target directory ${TARGET_DIR} already exists."
   echo "Please make sure you specify a non-existent target directory."
   exit 1
@@ -43,9 +43,9 @@ echo "TARGET_BUILD_DIR = ${TARGET_BUILD_DIR}"
 echo "TARGET_INSTALL_DIR = ${TARGET_INSTALL_DIR}"
 
 if [ "$(uname)" == "Darwin" ]; then
-  export NCPUS=`sysctl -n hw.ncpu`
+  export NCPUS=$(sysctl -n hw.ncpu)
 elif [ "$(uname -s)" == "Linux" ]; then
-  export NCPUS=`nproc`
+  export NCPUS=$(nproc)
 fi
 
 mkdir -p ${TARGET_DIR}
@@ -70,10 +70,11 @@ mv ${TARGET_DIR}/isl-${ISL_VERSION} ${TARGET_DIR}/gcc-${GCC_VERSION}/isl
 mv ${TARGET_DIR}/mpc-${MPC_VERSION} ${TARGET_DIR}/gcc-${GCC_VERSION}/mpc
 mv ${TARGET_DIR}/mpfr-${MPFR_VERSION} ${TARGET_DIR}/gcc-${GCC_VERSION}/mpfr
 
-CURRENT_DIR=`pwd`
+CURRENT_DIR=$(pwd)
 mkdir -p ${TARGET_BUILD_DIR}
 cd ${TARGET_BUILD_DIR}
 
 ${TARGET_DIR}/gcc-${GCC_VERSION}/configure --prefix=${TARGET_INSTALL_DIR}
-make -j${NCPUS} && make install
+make -j${NCPUS}
+make install
 cd ${CURRENT_DIR}

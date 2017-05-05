@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 echo "Installing prerequisite packages..."
 if [ "$(uname -s)" == "Darwin" ]; then

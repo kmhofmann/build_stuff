@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [[ $# -eq 0 ]] ; then
   echo "Usage:"
@@ -14,17 +15,17 @@ if [[ $# -eq 0 ]] ; then
   exit 1
 fi
 
-TARGET_DIR=`pwd`
-if [ ! -z "$1" ]; then
+TARGET_DIR=$(pwd)
+if [[ ! -z "$1" ]]; then
   TARGET_DIR=$1
 fi
 
 TAG=trunk
-if [ ! -z "$2" ]; then
+if [[ ! -z "$2" ]]; then
   TAG=$2
 fi
 
-CURRENT_DIR=`pwd`
+CURRENT_DIR=$(pwd)
 mkdir -p ${TARGET_DIR}
 cd ${TARGET_DIR}
 
@@ -32,9 +33,9 @@ svn co http://llvm.org/svn/llvm-project/llvm/$TAG llvm
 cd ${TARGET_DIR}/llvm/tools
 svn co http://llvm.org/svn/llvm-project/cfe/$TAG clang
 
-# optionally enable to build lldb
-#svn co http://llvm.org/svn/llvm-project/lldb/$TAG lldb
-#svn co http://llvm.org/svn/llvm-project/lld/$TAG lld
+# optionally dis-/enable to build lldb
+svn co http://llvm.org/svn/llvm-project/lldb/$TAG lldb
+svn co http://llvm.org/svn/llvm-project/lld/$TAG lld
 
 cd ${TARGET_DIR}/llvm/tools/clang/tools
 svn co http://llvm.org/svn/llvm-project/clang-tools-extra/$TAG extra
@@ -45,6 +46,7 @@ svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
 svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
 cd ${TARGET_DIR}
 
+# Check libcxx(abi) out again; these will be build with Clang
 if [ "$(uname -s)" == "Linux" ]; then
   svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
   svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
