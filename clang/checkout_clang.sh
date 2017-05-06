@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [[ $# -eq 0 ]] ; then
+if [[ $# -eq 0 ]]; then
   echo "Usage:"
   echo "  checkout_clang TARGET_DIR [TAG]"
   echo ""
