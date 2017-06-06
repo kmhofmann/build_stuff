@@ -51,8 +51,8 @@ echo "Cloning to ${REPO_DIR}, and installing to ${INSTALL_DIR}..."
 mkdir -p ${CLONE_DIR}
 git -C ${CLONE_DIR} clone https://github.com/vim/vim.git || true
 git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} pull origin master --rebase
 git -C ${REPO_DIR} checkout master
+git -C ${REPO_DIR} pull --rebase
 
 # Compile and install
 CURRENT_DIR=$(pwd)
