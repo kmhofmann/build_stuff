@@ -30,15 +30,17 @@ mkdir -p ${TARGET_DIR}
 cd ${TARGET_DIR}
 
 svn co http://llvm.org/svn/llvm-project/llvm/$TAG llvm
+
 cd ${TARGET_DIR}/llvm/tools
 svn co http://llvm.org/svn/llvm-project/cfe/$TAG clang
-
+svn co http://llvm.org/svn/llvm-project/lld/$TAG lld
+svn co http://llvm.org/svn/llvm-project/polly/$TAG polly
 # optionally dis-/enable to build lldb
 svn co http://llvm.org/svn/llvm-project/lldb/$TAG lldb
-svn co http://llvm.org/svn/llvm-project/lld/$TAG lld
 
 cd ${TARGET_DIR}/llvm/tools/clang/tools
 svn co http://llvm.org/svn/llvm-project/clang-tools-extra/$TAG extra
+
 cd ${TARGET_DIR}/llvm/projects
 svn co http://llvm.org/svn/llvm-project/openmp/$TAG openmp
 svn co http://llvm.org/svn/llvm-project/compiler-rt/$TAG compiler-rt
