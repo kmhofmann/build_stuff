@@ -21,7 +21,7 @@ print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_vim.sh -s [SOURCE_DIR] -t [INSTALL_DIR]"
+  echo "  build_vim.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [GIT_TAG])"
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo "Example:"
@@ -30,10 +30,11 @@ print_help()
   echo "to /usr/local."
 }
 
-while getopts ":s:t:h" opt; do
+while getopts ":s:t:T:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
+    T) GIT_TAG=$OPTARG; echo "Using GIT_TAG=${GIT_TAG}" ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -53,6 +54,9 @@ git -C ${CLONE_DIR} clone https://github.com/vim/vim.git || true
 git -C ${REPO_DIR} clean -fxd
 git -C ${REPO_DIR} checkout master
 git -C ${REPO_DIR} pull --rebase
+if [ ! -z "$GIT_TAG" ]; then
+  git -C ${REPO_DIR} checkout ${GIT_TAG}
+fi
 
 # Compile and install
 CURRENT_DIR=$(pwd)
