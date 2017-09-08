@@ -8,7 +8,7 @@ if [[ $# -eq 0 ]]; then
     echo "Usage:"
     echo "  build_clang TARGET_DIR"
     echo "Example:"
-    echo "  build_clang ~/clang400"
+    echo "  build_clang ~/clang500"
     exit 1
 fi
 

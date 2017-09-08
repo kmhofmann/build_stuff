@@ -10,7 +10,7 @@ if [[ $# -eq 0 ]]; then
   echo "If TAG is not specified, 'trunk' will be used."
   echo ""
   echo "Examples:"
-  echo "  checkout_clang ~/clang400 tags/RELEASE_400/final"
+  echo "  checkout_clang ~/clang500 tags/RELEASE_500/final"
   echo "  checkout_clang ~/clang_trunk"
   exit 1
 fi
