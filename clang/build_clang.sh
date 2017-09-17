@@ -34,6 +34,21 @@ elif [[ "$KERNEL_NAME" == "Linux" ]]; then
   export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"
 fi
 
+SWIG_EXE=$(which swig) || true
+if [[ -z "${SWIG_EXE}" ]]; then
+  echo "ERROR: SWIG was not found on the system. Please install SWIG, except"
+  echo "for versions 3.0.9 or 3.0.10, which are known to be incompatible with"
+  echo "lldb."
+  exit 0
+fi
+SWIG_VER=$(${SWIG_EXE} -version | grep SWIG | awk '{print $3}')
+if [ "$SWIG_VER" == "3.0.9" ] ||  [ "$SWIG_VER" == "3.0.10" ]; then
+  echo "ERROR: Swig versions 3.0.9 and 3.0.10 are incompatible with lldb."
+  echo "SWIG ${SWIG_VER} was found in ${SWIG_EXE}."
+  echo "Make sure you install a compatible version before compiling lldb."
+  exit 0
+fi
+
 # Build LLVM/Clang
 mkdir -p ${TARGET_BUILD_DIR}
 cd ${TARGET_BUILD_DIR}
@@ -42,6 +57,7 @@ cmake \
   -DCMAKE_CXX_COMPILER=$CXX \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR} \
+  -DSWIG_EXECUTABLE=${SWIG_EXE} \
   ${GCC_CMAKE_OPTION} \
   ../llvm
 make -j${NCPUS}
