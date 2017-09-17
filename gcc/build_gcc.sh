@@ -2,11 +2,11 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="7.1.0"
+GCC_VERSION="7.2.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.16.1"
 MPC_VERSION="1.0.3"
-MPFR_VERSION="3.1.5"
+MPFR_VERSION="3.1.6"
 
 if [[ $# -eq 0 ]]; then
     echo "Usage:"
@@ -15,7 +15,7 @@ if [[ $# -eq 0 ]]; then
     echo "If GCC_VERSION is not specified, '${GCC_VERSION}' will be used."
     echo ""
     echo "Example:"
-    echo "  build_gcc ~/gcc710 7.1.0"
+    echo "  build_gcc ~/gcc720 7.2.0"
     echo "  build_gcc ~/gcc630 6.3.0"
     echo "  build_gcc ~/gcc540 5.4.0"
     exit 1
@@ -47,8 +47,8 @@ elif [ "$KERNEL_NAME" == "Linux" ]; then
 fi
 
 mkdir -p ${TARGET_DIR}
-wget -c -P ${TARGET_DIR} http://nl.mirror.babylon.network/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2 || \
-  wget -c -P ${TARGET_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.bz2
+wget -c -P ${TARGET_DIR} http://nl.mirror.babylon.network/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz || \
+  wget -c -P ${TARGET_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
 wget -c -P ${TARGET_DIR} https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.bz2 || \
   wget -c -P ${TARGET_DIR} https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
 wget -c -P ${TARGET_DIR} ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-${ISL_VERSION}.tar.bz2
@@ -57,7 +57,7 @@ wget -c -P ${TARGET_DIR} http://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VE
   wget -c -P ${TARGET_DIR} https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
 
 echo "Extracting files..."
-tar xf ${TARGET_DIR}/gcc-${GCC_VERSION}.tar.bz2 -C ${TARGET_DIR}
+tar xf ${TARGET_DIR}/gcc-${GCC_VERSION}.tar.gz -C ${TARGET_DIR}
 tar xf ${TARGET_DIR}/gmp-${GMP_VERSION}.tar.bz2 -C ${TARGET_DIR}
 tar xf ${TARGET_DIR}/isl-${ISL_VERSION}.tar.bz2 -C ${TARGET_DIR}
 tar xf ${TARGET_DIR}/mpc-${MPC_VERSION}.tar.gz -C ${TARGET_DIR}
