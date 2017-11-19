@@ -48,7 +48,7 @@ svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
 svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
 cd ${TARGET_DIR}
 
-# Check libcxx(abi) out again; these will be build with Clang
+# Check libcxx(abi) out again; these will be built with Clang
 if [ "$(uname -s)" == "Linux" ]; then
   svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
   svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
