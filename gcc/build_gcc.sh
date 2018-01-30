@@ -2,11 +2,11 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="7.2.0"
+GCC_VERSION="7.3.0"
 GMP_VERSION="6.1.2"
-ISL_VERSION="0.16.1"
-MPC_VERSION="1.0.3"
-MPFR_VERSION="3.1.6"
+ISL_VERSION="0.18"
+MPC_VERSION="1.1.0"
+MPFR_VERSION="4.0.0"
 
 print_help()
 {
@@ -18,7 +18,7 @@ print_help()
     echo "If GCC_VERSION is not specified, '${GCC_VERSION}' will be used."
     echo ""
     echo "Example:"
-    echo "  build_gcc -t ~/gcc720 -g 7.2.0"
+    echo "  build_gcc -t ~/gcc730 -g 7.3.0"
     echo "  build_gcc -t ~/gcc630 -g 6.3.0"
     echo "  build_gcc -t ~/gcc540 -g 5.4.0"
 }
