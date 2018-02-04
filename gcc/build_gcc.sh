@@ -19,8 +19,7 @@ print_help()
     echo ""
     echo "Example:"
     echo "  build_gcc -t ~/gcc730 -g 7.3.0"
-    echo "  build_gcc -t ~/gcc630 -g 6.3.0"
-    echo "  build_gcc -t ~/gcc540 -g 5.4.0"
+    echo "  build_gcc -t ~/gcc550 -g 5.5.0"
 }
 
 if [[ $# -eq 0 ]]; then
