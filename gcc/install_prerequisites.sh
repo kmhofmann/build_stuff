@@ -6,5 +6,5 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(uname -s)" == "Linux" ]; then
   echo "Installing prerequisite packages..."
   sudo apt-get install build-essential g++ gcc-multilib \
-    zip zlib1g-dev dejagnu tcl expect #openjdk-8-jdk
+    zip zlib1g-dev dejagnu tcl expect wget #openjdk-8-jdk
 fi
