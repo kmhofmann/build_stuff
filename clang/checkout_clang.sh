@@ -3,7 +3,7 @@
 print_help()
 {
   echo "Usage:"
-  echo "  checkout_clang -s [SRC_DIR] (-t [TAG]) -B"
+  echo "  checkout_clang -s SRC_DIR [-t TAG] [-B]"
   echo ""
   echo "SRC_DIR designates the directory where the source code will be checked"
   echo "out to (and where Clang will be built)."

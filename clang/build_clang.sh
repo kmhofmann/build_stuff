@@ -7,20 +7,24 @@ print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_clang.sh -s [SRC_DIR] (-b [BUILD_DIR]) (-i [INSTALL_DIR])"
+  echo "  build_clang.sh -s SRC_DIR [-b BUILD_DIR] [-i INSTALL_DIR) [-t) [-u]"
   echo ""
   echo "-s: Directory in which the source has been checked out."
-  echo "-b: Build directory. Defaults to [SRC_DIR]/build."
-  echo "-i: Installation directory. Defaults to [SRC_DIR]/install."
+  echo "-b: Build directory. Defaults to SRC_DIR/build."
+  echo "-i: Installation directory. Defaults to SRC_DIR/install."
+  echo "-t: Perform Clang regression tests."
+  echo "-u: Perform libc++ regression tests."
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:i:h" opt; do
+while getopts ":s:b:i:tuh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
     i) INSTALL_DIR=$OPTARG ;;
+    t) TEST_CLANG=1 ;;
+    u) TEST_LIBCXX=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -53,7 +57,7 @@ if [[ -z "${SWIG_EXE}" ]]; then
   exit 0
 fi
 SWIG_VER=$(${SWIG_EXE} -version | grep SWIG | awk '{print $3}')
-if [ "$SWIG_VER" == "3.0.9" ] ||  [ "$SWIG_VER" == "3.0.10" ]; then
+if [[ "$SWIG_VER" == "3.0.9" ]] ||  [[ "$SWIG_VER" == "3.0.10" ]]; then
   echo "ERROR: Swig versions 3.0.9 and 3.0.10 are incompatible with lldb."
   echo "SWIG ${SWIG_VER} was found in ${SWIG_EXE}."
   echo "Make sure you install a compatible version before compiling lldb."
@@ -69,17 +73,19 @@ echo "INSTALL_DIR=${INSTALL_DIR}"
 # Build LLVM/Clang
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
-#cmake \
-#  -DCMAKE_BUILD_TYPE=Release \
-#  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-#  -DSWIG_EXECUTABLE=${SWIG_EXE} \
-#  -DLLVM_ENABLE_ASSERTIONS=OFF \
-#  -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
-#  -DLIBCXX_ENABLE_ASSERTIONS=OFF \
-#  ${GCC_CMAKE_OPTION} \
-#  ${SRC_DIR}/llvm
-#make -j${NCPUS}
-#make check-clang -j${NCPUS}
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+  -DSWIG_EXECUTABLE=${SWIG_EXE} \
+  -DLLVM_ENABLE_ASSERTIONS=OFF \
+  -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
+  -DLIBCXX_ENABLE_ASSERTIONS=OFF \
+  ${GCC_CMAKE_OPTION} \
+  ${SRC_DIR}/llvm
+make -j${NCPUS}
+if [[ "${TEST_CLANG}" ]]; then
+  make check-clang -j${NCPUS}
+fi
 make install
 
 cd ${SRC_DIR}
@@ -116,7 +122,9 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
     ${SRC_DIR}/libcxx
 
   make -j${NCPUS}
-  make check-libcxx -j${NCPUS}
+  if [[ "${TEST_LIBCXX}" ]]; then
+    make check-libcxx -j${NCPUS}
+  fi
   make install
 fi
 
