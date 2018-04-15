@@ -1,42 +1,48 @@
 #!/bin/bash
-set -e
 
 # NOTE: to sucessfully build lldb on Mac OS X, you will have to do this:
 # https://llvm.org/svn/llvm-project/lldb/trunk/docs/code-signing.txt
 
-if [[ $# -eq 0 ]]; then
-    echo "Usage:"
-    echo "  build_clang TARGET_DIR"
-    echo "Example:"
-    echo "  build_clang ~/clang500"
-    exit 1
-fi
+print_help()
+{
+  echo ""
+  echo "Usage:"
+  echo "  build_clang.sh -s [SRC_DIR] (-b [BUILD_DIR]) (-i [INSTALL_DIR])"
+  echo ""
+  echo "-s: Directory in which the source has been checked out."
+  echo "-b: Build directory. Defaults to [SRC_DIR]/build."
+  echo "-i: Installation directory. Defaults to [SRC_DIR]/install."
+  echo ""
+  echo "CC and CXX determine the compiler to be used."
+}
 
-TARGET_DIR=$(pwd)
-if [[ ! -z "$1" ]]; then
-  TARGET_DIR=$1
-fi
+while getopts ":s:b:i:h" opt; do
+  case ${opt} in
+    s) SRC_DIR=$OPTARG ;;
+    b) BUILD_DIR=$OPTARG ;;
+    i) INSTALL_DIR=$OPTARG ;;
+    h) print_help; exit 0 ;;
+    :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
+    \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
+  esac
+done
+[[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
+[[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
+[[ -z "$INSTALL_DIR" ]] && { INSTALL_DIR=${SRC_DIR}/install; }
+[[ "$ARGERR" ]] && { print_help; exit 1; }
+
+set -e
 
 CURRENT_DIR=$(pwd)
-TARGET_INSTALL_DIR=$TARGET_DIR/install
-TARGET_BUILD_DIR=$TARGET_DIR/build
 
 KERNEL_NAME=$(uname -s)
 if [[ "$KERNEL_NAME" == "Darwin" ]]; then
   export NCPUS=$(sysctl -n hw.ncpu)
-
-  export CC=$(which clang)
-  export CXX=$(which clang++)
 elif [[ "$KERNEL_NAME" == "Linux" ]]; then
   export NCPUS=$(nproc)
 
   export GCCDIR=$(dirname $(which gcc))/../
-  export CC=$(which gcc)
-  export CXX=$(which g++)
   export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"
-
-  #export CC=$(which clang)
-  #export CXX=$(which clang++)
 fi
 
 SWIG_EXE=$(which swig) || true
@@ -54,55 +60,61 @@ if [ "$SWIG_VER" == "3.0.9" ] ||  [ "$SWIG_VER" == "3.0.10" ]; then
   exit 0
 fi
 
-echo "Using CC=${CC}, CXX=${CXX}."
+echo "CC=${CC}"
+echo "CXX=${CXX}"
+echo "SRC_DIR=${SRC_DIR}"
+echo "BUILD_DIR=${BUILD_DIR}"
+echo "INSTALL_DIR=${INSTALL_DIR}"
 
 # Build LLVM/Clang
-mkdir -p ${TARGET_BUILD_DIR}
-cd ${TARGET_BUILD_DIR}
-cmake \
-  -DCMAKE_C_COMPILER=$CC \
-  -DCMAKE_CXX_COMPILER=$CXX \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR} \
-  -DSWIG_EXECUTABLE=${SWIG_EXE} \
-  -DLLVM_ENABLE_ASSERTIONS=OFF \
-  -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
-  -DLIBCXX_ENABLE_ASSERTIONS=OFF \
-  ${GCC_CMAKE_OPTION} \
-  ../llvm
-make -j${NCPUS}
-#make check-libcxx -j${NCPUS}
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+#cmake \
+#  -DCMAKE_BUILD_TYPE=Release \
+#  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+#  -DSWIG_EXECUTABLE=${SWIG_EXE} \
+#  -DLLVM_ENABLE_ASSERTIONS=OFF \
+#  -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
+#  -DLIBCXX_ENABLE_ASSERTIONS=OFF \
+#  ${GCC_CMAKE_OPTION} \
+#  ${SRC_DIR}/llvm
+#make -j${NCPUS}
+#make check-clang -j${NCPUS}
 make install
 
-cd ${TARGET_DIR}
+cd ${SRC_DIR}
 
 # Build libcxx(abi) with the freshly built Clang
 if [[ "$KERNEL_NAME" == "Linux" ]]; then
   # Export relevant environment variables to be able to call Clang
-  export PATH=${TARGET_INSTALL_DIR}/bin:$PATH
-  export LD_LIBRARY_PATH=${TARGET_INSTALL_DIR}/lib:${LD_LIBRARY_PATH}
+  export PATH=${INSTALL_DIR}/bin:$PATH
+  export LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}
 
-  # Compile libcxxabi
-  mkdir -p ${TARGET_DIR}/libcxxabi/build
-  cd ${TARGET_DIR}/libcxxabi/build
-  cmake \
-    -DLIBCXXABI_LIBCXX_INCLUDES=../../libcxx/include \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++ \
-    ..
+  # Build libcxxabi
+  mkdir -p ${BUILD_DIR}/libcxxabi_build
+  cd ${BUILD_DIR}/libcxxabi_build
+
+  CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
+    -DLIBCXXABI_LIBCXX_INCLUDES=${SRC_DIR}/libcxx/include \
+    ${SRC_DIR}/libcxxabi
+    #-DCMAKE_C_COMPILER=${INSTALL_DIR}/bin/clang \
+    #-DCMAKE_CXX_COMPILER=${INSTALL_DIR}/bin/clang++ \
+
   make -j${NCPUS}
-  mv lib/* ${TARGET_INSTALL_DIR}/lib/
+  mv lib/* ${INSTALL_DIR}/lib/
 
-  # Compile libcxx
-  mkdir -p ${TARGET_DIR}/libcxx/build
-  cd ${TARGET_DIR}/libcxx/build
-  CC=clang CXX=clang++ cmake \
+  # Build libcxx
+  mkdir -p ${BUILD_DIR}/libcxx_build
+  cd ${BUILD_DIR}/libcxx_build
+
+  CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
     -G "Unix Makefiles" \
     -DLIBCXX_CXX_ABI=libcxxabi \
-    -DLIBCXX_CXX_ABI_INCLUDE_PATHS="../../libcxxabi/include" \
+    -DLIBCXX_CXX_ABI_INCLUDE_PATHS="${SRC_DIR}/libcxxabi/include" \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${TARGET_INSTALL_DIR} \
-    ..
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+    ${SRC_DIR}/libcxx
+
   make -j${NCPUS}
   make check-libcxx -j${NCPUS}
   make install
