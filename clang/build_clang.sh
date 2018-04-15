@@ -7,22 +7,24 @@ print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_clang.sh -s SRC_DIR [-b BUILD_DIR] [-i INSTALL_DIR) [-t) [-u]"
+  echo "  build_clang.sh -s SRC_DIR [-b BUILD_DIR] [-i INSTALL_DIR] [-a ABI_TYPE] [-t) [-u]"
   echo ""
   echo "-s: Directory in which the source has been checked out."
   echo "-b: Build directory. Defaults to SRC_DIR/build."
   echo "-i: Installation directory. Defaults to SRC_DIR/install."
+  echo "-a: ABI type for Linux. Either 'libstdc++' or 'libcxxabi'. Defaults to 'libstdc++'."
   echo "-t: Perform Clang regression tests."
   echo "-u: Perform libc++ regression tests."
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:i:tuh" opt; do
+while getopts ":s:b:i:a:tuh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
     i) INSTALL_DIR=$OPTARG ;;
+    a) ABI_TYPE=$OPTARG ;;
     t) TEST_CLANG=1 ;;
     u) TEST_LIBCXX=1 ;;
     h) print_help; exit 0 ;;
@@ -33,7 +35,13 @@ done
 [[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
 [[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
 [[ -z "$INSTALL_DIR" ]] && { INSTALL_DIR=${SRC_DIR}/install; }
+[[ -z "$ABI_TYPE" ]] && { ABI_TYPE="libstdc++"; }
 [[ "$ARGERR" ]] && { print_help; exit 1; }
+
+if [[ ! "${ABI_TYPE}" == "libstdc++" ]] && [[ ! "${ABI_TYPE}" == "libcxxabi" ]]; then
+  echo "Illegal ABI_TYPE ${ABI_TYPE}."
+  exit 0
+fi
 
 set -e
 
@@ -69,6 +77,7 @@ echo "CXX=${CXX}"
 echo "SRC_DIR=${SRC_DIR}"
 echo "BUILD_DIR=${BUILD_DIR}"
 echo "INSTALL_DIR=${INSTALL_DIR}"
+echo "ABI_TYPE=${ABI_TYPE}"
 
 # Build LLVM/Clang
 mkdir -p ${BUILD_DIR}
@@ -96,18 +105,25 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
   export PATH=${INSTALL_DIR}/bin:$PATH
   export LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}
 
-  # Build libcxxabi
-  mkdir -p ${BUILD_DIR}/libcxxabi_build
-  cd ${BUILD_DIR}/libcxxabi_build
+  if [[ "${ABI_TYPE}" == "libcxxabi" ]]; then
+    ABI_INCL="${SRC_DIR}/libcxxabi/include"
+  else
+    ABI_INCL=$(echo | g++ -Wp,-v -x c++ - -fsyntax-only 2>&1 | grep "^ " | head -n 2 | tr '\n' ';' | tr -d '[:space:]')
+  fi
 
-  CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
-    -DLIBCXXABI_LIBCXX_INCLUDES=${SRC_DIR}/libcxx/include \
-    ${SRC_DIR}/libcxxabi
-    #-DCMAKE_C_COMPILER=${INSTALL_DIR}/bin/clang \
-    #-DCMAKE_CXX_COMPILER=${INSTALL_DIR}/bin/clang++ \
+  if [[ "$ABI_TYPE" == "libcxxabi" ]]; then
+    # Build libcxxabi
+    mkdir -p ${BUILD_DIR}/libcxxabi_build
+    cd ${BUILD_DIR}/libcxxabi_build
 
-  make -j${NCPUS}
-  mv lib/* ${INSTALL_DIR}/lib/
+    CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DLIBCXXABI_LIBCXX_INCLUDES=${SRC_DIR}/libcxx/include \
+      ${SRC_DIR}/libcxxabi
+
+    make -j${NCPUS}
+    mv lib/* ${INSTALL_DIR}/lib/
+  fi
 
   # Build libcxx
   mkdir -p ${BUILD_DIR}/libcxx_build
@@ -115,10 +131,11 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
 
   CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
     -G "Unix Makefiles" \
-    -DLIBCXX_CXX_ABI=libcxxabi \
-    -DLIBCXX_CXX_ABI_INCLUDE_PATHS="${SRC_DIR}/libcxxabi/include" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+    -DLLVM_PATH=${SRC_DIR}/llvm \
+    -DLIBCXX_CXX_ABI=${ABI_TYPE} \
+    -DLIBCXX_CXX_ABI_INCLUDE_PATHS="${ABI_INCL}" \
     ${SRC_DIR}/libcxx
 
   make -j${NCPUS}
