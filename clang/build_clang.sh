@@ -24,16 +24,19 @@ TARGET_BUILD_DIR=$TARGET_DIR/build
 KERNEL_NAME=$(uname -s)
 if [[ "$KERNEL_NAME" == "Darwin" ]]; then
   export NCPUS=$(sysctl -n hw.ncpu)
+
   export CC=$(which clang)
   export CXX=$(which clang++)
 elif [[ "$KERNEL_NAME" == "Linux" ]]; then
   export NCPUS=$(nproc)
+
   export GCCDIR=$(dirname $(which gcc))/../
-  #export CC=$GCCDIR/bin/gcc
-  #export CXX=$GCCDIR/bin/g++
-  export CC=$(which clang)
-  export CXX=$(which clang++)
+  export CC=$(which gcc)
+  export CXX=$(which g++)
   export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"
+
+  #export CC=$(which clang)
+  #export CXX=$(which clang++)
 fi
 
 SWIG_EXE=$(which swig) || true
