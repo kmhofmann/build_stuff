@@ -29,8 +29,10 @@ if [[ "$KERNEL_NAME" == "Darwin" ]]; then
 elif [[ "$KERNEL_NAME" == "Linux" ]]; then
   export NCPUS=$(nproc)
   export GCCDIR=$(dirname $(which gcc))/../
-  export CC=$GCCDIR/bin/gcc
-  export CXX=$GCCDIR/bin/g++
+  #export CC=$GCCDIR/bin/gcc
+  #export CXX=$GCCDIR/bin/g++
+  export CC=$(which clang)
+  export CXX=$(which clang++)
   export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"
 fi
 
@@ -49,6 +51,8 @@ if [ "$SWIG_VER" == "3.0.9" ] ||  [ "$SWIG_VER" == "3.0.10" ]; then
   exit 0
 fi
 
+echo "Using CC=${CC}, CXX=${CXX}."
+
 # Build LLVM/Clang
 mkdir -p ${TARGET_BUILD_DIR}
 cd ${TARGET_BUILD_DIR}
@@ -64,7 +68,7 @@ cmake \
   ${GCC_CMAKE_OPTION} \
   ../llvm
 make -j${NCPUS}
-make check-libcxx -j${NCPUS}
+#make check-libcxx -j${NCPUS}
 make install
 
 cd ${TARGET_DIR}
