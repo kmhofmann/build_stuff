@@ -6,7 +6,7 @@
 # [optional] sudo apt-get install python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  export NCPUS=$(sysctl -n hw.ncpu)
+  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$(uname -s)" == "Linux" ]]; then
   export NCPUS=$(($(nproc)/2))
 fi

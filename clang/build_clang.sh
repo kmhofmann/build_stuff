@@ -49,9 +49,9 @@ CURRENT_DIR=$(pwd)
 
 KERNEL_NAME=$(uname -s)
 if [[ "$KERNEL_NAME" == "Darwin" ]]; then
-  export NCPUS=$(sysctl -n hw.ncpu)
+  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$KERNEL_NAME" == "Linux" ]]; then
-  export NCPUS=$(nproc)
+  export NCPUS=$(($(nproc)/2))
 
   export GCCDIR=$(dirname $(which gcc))/../
   export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"

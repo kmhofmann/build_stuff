@@ -57,9 +57,9 @@ echo "INSTALL_DIR=${INSTALL_DIR}"
 
 KERNEL_NAME=$(uname -s)
 if [ "$KERNEL_NAME" == "Darwin" ]; then
-  export NCPUS=$(sysctl -n hw.ncpu)
+  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [ "$KERNEL_NAME" == "Linux" ]; then
-  export NCPUS=$(nproc)
+  export NCPUS=$(($(nproc)/2))
 fi
 
 if [ -z "$SKIP_DOWNLOAD" ]; then
