@@ -30,7 +30,7 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:b:i:g:dbh" opt; do
+while getopts ":s:b:i:g:deh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
