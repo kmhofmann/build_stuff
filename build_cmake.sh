@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Testing required...
-echo "UNTESTED"
-exit 0
-
 if [[ "$(uname -s)" == "Darwin" ]]; then
   export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$(uname -s)" == "Linux" ]]; then
@@ -44,7 +40,7 @@ done
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
 set -e
-REPO_DIR=${CLONE_DIR}/opencv
+REPO_DIR=${CLONE_DIR}/cmake
 echo "Cloning to ${REPO_DIR} and installing to ${INSTALL_DIR}..."
 
 # Clone and get to clean slate
