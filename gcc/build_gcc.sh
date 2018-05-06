@@ -2,11 +2,11 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="7.3.0"
+GCC_VERSION="8.1.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.18"
 MPC_VERSION="1.1.0"
-MPFR_VERSION="4.0.0"
+MPFR_VERSION="4.0.1"
 
 print_help()
 {
@@ -21,7 +21,7 @@ print_help()
   echo "-e: Skip downloading files; assume they are already present"
   echo ""
   echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc730 -g 7.3.0"
+  echo "  build_gcc -s ~/src/gcc730 -g 8.1.0"
   echo "  build_gcc -s ~/src/gcc550 -i ~/local/gcc550 -g 5.5.0"
 }
 
@@ -43,7 +43,7 @@ while getopts ":s:b:i:g:deh" opt; do
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
   esac
 done
-[[ -z "$SRC_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
+[[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
 [[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
 [[ -z "$INSTALL_DIR" ]] && { INSTALL_DIR=${SRC_DIR}/install; }
 [[ -z "$GCC_VERSION" ]] && { echo "Missing option -g"; ARGERR=1; }
