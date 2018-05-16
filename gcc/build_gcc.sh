@@ -21,7 +21,7 @@ print_help()
   echo "-e: Skip downloading files; assume they are already present"
   echo ""
   echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc730 -g 8.1.0"
+  echo "  build_gcc -s ~/src/gcc810 -g 8.1.0"
   echo "  build_gcc -s ~/src/gcc550 -i ~/local/gcc550 -g 5.5.0"
 }
 
