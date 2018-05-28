@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# sudo apt-get install automake pkg-config libevent-dev libncurses-dev
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
   export NCPUS=`sysctl -n hw.ncpu`
 elif [[ "$(uname -s)" == "Linux" ]]; then
