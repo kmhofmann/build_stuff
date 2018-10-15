@@ -47,6 +47,7 @@ git -C ${REPO_DIR} reset HEAD --hard
 git -C ${REPO_DIR} clean -fxd
 git -C ${REPO_DIR} fetch
 git -C ${REPO_DIR} checkout master
+git -C ${REPO_DIR} pull
 
 # Compile and install
 CURRENT_DIR=$(pwd)
