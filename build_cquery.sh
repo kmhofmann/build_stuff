@@ -45,9 +45,8 @@ git -C ${REPO_DIR} submodule init
 git -C ${REPO_DIR} submodule update
 git -C ${REPO_DIR} reset HEAD --hard
 git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} fetch
 git -C ${REPO_DIR} checkout master
-git -C ${REPO_DIR} pull
+git -C ${REPO_DIR} pull --rebase
 
 # Compile and install
 CURRENT_DIR=$(pwd)
