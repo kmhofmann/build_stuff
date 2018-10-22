@@ -2,7 +2,7 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="8.1.0"
+GCC_VERSION="8.2.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.18"
 MPC_VERSION="1.1.0"
@@ -21,7 +21,7 @@ print_help()
   echo "-e: Skip downloading files; assume they are already present"
   echo ""
   echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc810 -g 8.1.0"
+  echo "  build_gcc -s ~/src/gcc810 -g 8.2.0"
   echo "  build_gcc -s ~/src/gcc550 -i ~/local/gcc550 -g 5.5.0"
 }
 

@@ -12,7 +12,7 @@ print_help()
   echo "-s: Directory in which the source has been checked out."
   echo "-b: Build directory. Defaults to SRC_DIR/build."
   echo "-i: Installation directory. Defaults to SRC_DIR/install."
-  echo "-a: ABI type for Linux. Either 'libstdc++' or 'libcxxabi'. Defaults to 'libstdc++'."
+  echo "-a: ABI type for Linux. Either 'libstdc++' or 'libcxxabi'. Defaults to 'libcxxabi'."
   echo "-t: Perform Clang regression tests."
   echo "-u: Perform libc++ regression tests."
   echo ""
@@ -35,7 +35,7 @@ done
 [[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
 [[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
 [[ -z "$INSTALL_DIR" ]] && { INSTALL_DIR=${SRC_DIR}/install; }
-[[ -z "$ABI_TYPE" ]] && { ABI_TYPE="libstdc++"; }
+[[ -z "$ABI_TYPE" ]] && { ABI_TYPE="libcxxabi"; }
 [[ "$ARGERR" ]] && { print_help; exit 1; }
 
 if [[ ! "${ABI_TYPE}" == "libstdc++" ]] && [[ ! "${ABI_TYPE}" == "libcxxabi" ]]; then

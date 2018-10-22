@@ -22,7 +22,7 @@ print_help()
   echo "-X: do not check out libcxx/libcxxabi (out of tree)"
   echo ""
   echo "Examples:"
-  echo "  checkout_clang -s ~/clang600 -t tags/RELEASE_600/final"
+  echo "  checkout_clang -s ~/clang700 -t tags/RELEASE_700/final"
   echo "  checkout_clang -s ~/clang_trunk"
   exit 1
 }
