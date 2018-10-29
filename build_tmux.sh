@@ -45,7 +45,7 @@ git -C ${REPO_DIR} clean -fxd
 git -C ${REPO_DIR} checkout master
 git -C ${REPO_DIR} pull --rebase
 # Check out the latest released version
-TMUX_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
+TMUX_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags --match "[0-9]*")
 git -C ${REPO_DIR} checkout ${TMUX_VERSION}
 
 # Compile and install
