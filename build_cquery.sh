@@ -16,7 +16,7 @@ print_help()
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo ""
   echo "Example:"
-  echo "  build_cquery.sh -s ~/devel -t $HOME/local/cmake"
+  echo "  build_cquery.sh -s ~/devel -t $HOME/local/cquery"
   echo "cquery will then be cloned to and built in ~/devel/cquery, and"
   echo "installed to $HOME/local/cquery."
 }

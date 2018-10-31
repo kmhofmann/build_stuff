@@ -25,9 +25,9 @@ print_help()
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo "Example:"
-  echo "  build_neovim.sh -s ~/devel -t /usr/local"
+  echo "  build_neovim.sh -s ~/devel -t $HOME/local/neovim"
   echo "Neovim will then be cloned to and built in ~/devel/neovim, and installed"
-  echo "to /usr/local."
+  echo "to $HOME/local/neovim."
 }
 
 while getopts ":s:t:T:h" opt; do

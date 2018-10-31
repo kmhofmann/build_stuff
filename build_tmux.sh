@@ -16,9 +16,9 @@ print_help()
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo "Example:"
-  echo "  build_tmux.sh -s ~/devel -t /usr/local"
+  echo "  build_tmux.sh -s ~/devel -t $HOME/local/tmux"
   echo "tmux will then be cloned to and built in ~/devel/tmux, and installed"
-  echo "to /usr/local."
+  echo "to $HOME/local/tmux."
 }
 
 while getopts ":s:t:h" opt; do
