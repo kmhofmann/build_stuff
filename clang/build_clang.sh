@@ -15,11 +15,12 @@ print_help()
   echo "-a: ABI type for Linux. Either 'libstdc++' or 'libcxxabi'. Defaults to 'libcxxabi'."
   echo "-t: Perform Clang regression tests."
   echo "-u: Perform libc++ regression tests."
+  echo "-o: Disable building of libomptarget (which might drag in CUDA, which might require an old compiler)"
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:i:a:tuh" opt; do
+while getopts ":s:b:i:a:tuoh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
@@ -27,6 +28,7 @@ while getopts ":s:b:i:a:tuh" opt; do
     a) ABI_TYPE=$OPTARG ;;
     t) TEST_CLANG=1 ;;
     u) TEST_LIBCXX=1 ;;
+    o) DISABLE_LIBOMPTARGET=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -79,6 +81,10 @@ echo "BUILD_DIR=${BUILD_DIR}"
 echo "INSTALL_DIR=${INSTALL_DIR}"
 echo "ABI_TYPE=${ABI_TYPE}"
 
+if [[ "${DISABLE_LIBOMPTARGET}" ]]; then
+  CM_OPTION_DISABLE_LIBOMPTARGET="-DOPENMP_ENABLE_LIBOMPTARGET=OFF"
+fi
+
 # Build LLVM/Clang
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
@@ -89,6 +95,7 @@ cmake \
   -DLLVM_ENABLE_ASSERTIONS=OFF \
   -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
   -DLIBCXX_ENABLE_ASSERTIONS=OFF \
+  ${CM_OPTION_DISABLE_LIBOMPTARGET} \
   ${GCC_CMAKE_OPTION} \
   ${SRC_DIR}/llvm
 make -j${NCPUS}
