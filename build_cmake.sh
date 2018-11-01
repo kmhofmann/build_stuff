@@ -52,6 +52,7 @@ git -C ${REPO_DIR} pull --rebase
 
 # Get the tag of the latest released version
 if [[ -z "$CMAKE_VERSION" ]]; then
+  echo "Determining latest release tag..."
   CMAKE_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
 fi
 echo "CMAKE_VERSION=${CMAKE_VERSION}"
