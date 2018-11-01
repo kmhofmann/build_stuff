@@ -17,7 +17,7 @@ print_help()
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo ""
   echo "Optionally, a repository tag can be specified with -T to build a"
-  echo "certain release (e.g. '2.8'). If not specified, the latest tag will"
+  echo "certain release (e.g. '2.8'). If not specified, the latest"
   echo "be checked out; this may include pre-release versions."
   echo ""
   echo "Example:"
@@ -30,7 +30,7 @@ while getopts ":s:t:T:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
-    T) TMUX_BUILD_VERSION=$OPTARG ;;
+    T) GIT_TAG=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -52,14 +52,13 @@ git -C ${REPO_DIR} checkout master
 git -C ${REPO_DIR} pull --rebase
 
 # Check out the latest released version
-if [[ -z "$TMUX_BUILD_VERSION" ]]; then
+if [[ -z "$GIT_TAG" ]]; then
   echo "Determining latest release tag..."
-  git -C ${REPO_DIR} tag
-  TMUX_BUILD_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags --match "[0-9]*")
+  GIT_TAG=$(git -C ${REPO_DIR} describe --abbrev=0 --tags --match "[0-9]*")
 fi
-echo "TMUX_BUILD_VERSION=${TMUX_BUILD_VERSION}"
+echo "GIT_TAG=${GIT_TAG}"
 
-git -C ${REPO_DIR} checkout ${TMUX_BUILD_VERSION}
+git -C ${REPO_DIR} checkout ${GIT_TAG}
 
 # Compile and install
 CURRENT_DIR=$(pwd)

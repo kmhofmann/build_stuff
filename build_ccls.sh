@@ -10,10 +10,14 @@ print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_ccls.sh -s [SOURCE_DIR] -t [INSTALL_DIR]"
+  echo "  build_ccls.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [TAG])"
   echo ""
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
+  echo ""
+  echo "Optionally, a repository tag can be specified with -T to build a"
+  echo "certain release. If not specified, the latest commit from master"
+  echo "will be checked out and built."
   echo ""
   echo "Example:"
   echo "  build_ccls.sh -s ~/devel -t $HOME/local/cmake"
@@ -21,10 +25,11 @@ print_help()
   echo "installed to $HOME/local/ccls."
 }
 
-while getopts ":s:t:h" opt; do
+while getopts ":s:t:T:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
+    T) GIT_TAG=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -47,6 +52,12 @@ git -C ${REPO_DIR} reset HEAD --hard
 git -C ${REPO_DIR} clean -fxd
 git -C ${REPO_DIR} checkout master
 git -C ${REPO_DIR} pull --rebase
+
+# Use user-specified tag, if applicable
+if [[ ! -z "$GIT_TAG" ]]; then
+  echo "GIT_TAG=${GIT_TAG}"
+  git -C ${REPO_DIR} checkout ${GIT_TAG}
+fi
 
 # Compile and install
 CURRENT_DIR=$(pwd)

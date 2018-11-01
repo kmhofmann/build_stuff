@@ -29,7 +29,7 @@ while getopts ":s:t:T:C:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
-    T) CMAKE_VERSION=$OPTARG ;;
+    T) GIT_TAG=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -51,13 +51,13 @@ git -C ${REPO_DIR} checkout master
 git -C ${REPO_DIR} pull --rebase
 
 # Get the tag of the latest released version
-if [[ -z "$CMAKE_VERSION" ]]; then
+if [[ -z "$GIT_TAG" ]]; then
   echo "Determining latest release tag..."
-  CMAKE_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
+  GIT_TAG=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
 fi
-echo "CMAKE_VERSION=${CMAKE_VERSION}"
+echo "GIT_TAG=${GIT_TAG}"
 
-git -C ${REPO_DIR} checkout ${CMAKE_VERSION}
+git -C ${REPO_DIR} checkout ${GIT_TAG}
 
 # Compile and install
 CURRENT_DIR=$(pwd)
