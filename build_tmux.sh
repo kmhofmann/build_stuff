@@ -62,7 +62,7 @@ git -C ${REPO_DIR} checkout ${GIT_TAG}
 
 # Compile and install
 CURRENT_DIR=$(pwd)
-mkdir -p ${INSTALL_DIR}
+#mkdir -p ${INSTALL_DIR}
 
 cd ${REPO_DIR}
 sh autogen.sh
