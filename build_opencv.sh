@@ -32,12 +32,13 @@ print_help()
   echo "installed to $HOME/local/opencv."
 }
 
-while getopts ":s:t:T:C:h" opt; do
+while getopts ":s:t:T:C:j:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
     T) OPENCV_VERSION=$OPTARG ;;
     C) CUDA_ARCH_BIN=$OPTARG ;;
+    j) NCPUS=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -48,10 +49,11 @@ done
 [[ -z "$CUDA_ARCH_BIN" ]] && { CUDA_ARCH_BIN="5.2 6.1"; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
-set -e
 REPO_DIR=${CLONE_DIR}/opencv
 CONTRIB_DIR=${CLONE_DIR}/opencv_contrib
 echo "Cloning to ${REPO_DIR} and ${CONTRIB_DIR}, and installing to ${INSTALL_DIR}..."
+set -e
+set -x
 
 # Clone and get to clean slate
 mkdir -p ${CLONE_DIR}

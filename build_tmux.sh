@@ -26,11 +26,12 @@ print_help()
   echo "to $HOME/local/tmux."
 }
 
-while getopts ":s:t:T:h" opt; do
+while getopts ":s:t:T:j:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
     T) GIT_TAG=$OPTARG ;;
+    j) NCPUS=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -40,9 +41,10 @@ done
 [[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
-set -e
 REPO_DIR=${CLONE_DIR}/tmux
 echo "Cloning to ${REPO_DIR}, and installing to ${INSTALL_DIR}..."
+set -e
+set -x
 
 # Clone and get to clean slate
 mkdir -p ${CLONE_DIR}
