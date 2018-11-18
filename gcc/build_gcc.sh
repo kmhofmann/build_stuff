@@ -17,8 +17,9 @@ print_help()
   echo "-b: Build directory. Defaults to SRC_DIR/build."
   echo "-i: Installation directory. Defaults to SRC_DIR/install."
   echo "-g: GCC version to build; defaults to ${GCC_VERSION}."
-  echo "-d: Only download files; do not build"
+  echo "-d: Only download files; do not extract or build"
   echo "-e: Skip downloading files; assume they are already present"
+  echo "-x: Exit after extracting files; do not configure or build."
   echo ""
   echo "Examples:"
   echo "  build_gcc -s ~/src/gcc810 -g 8.2.0"
@@ -30,7 +31,7 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:b:i:g:deh" opt; do
+while getopts ":s:b:i:g:dexh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
@@ -38,6 +39,7 @@ while getopts ":s:b:i:g:deh" opt; do
     g) GCC_VERSION=$OPTARG ;;
     d) ONLY_DOWNLOAD=1 ;;
     e) SKIP_DOWNLOAD=1 ;;
+    x) EXIT_BEFORE_BUILD=1 ;;
     h) print_help; exit 1 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -104,6 +106,8 @@ mv ${SRC_DIR}/mpfr-${MPFR_VERSION} ${SRC_DIR}/gcc-${GCC_VERSION}/mpfr
 CURRENT_DIR=$(pwd)
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
+
+[[ ! -z "$EXIT_BEFORE_BUILD" ]] && { echo "Exiting before configure/build"; exit 1; }
 
 echo "Configuring and building GCC..."
 ${SRC_DIR}/gcc-${GCC_VERSION}/configure --prefix=${INSTALL_DIR}
