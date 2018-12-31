@@ -114,5 +114,6 @@ ${SRC_DIR}/gcc-${GCC_VERSION}/configure --prefix=${INSTALL_DIR}
 make profiledbootstrap -j${NCPUS}
 # Running the tests fails; I suspect it's because of something missing in the test setup.
 #make -k check -j16
-make install-strip
+#make install-strip
+make install
 cd ${CURRENT_DIR}

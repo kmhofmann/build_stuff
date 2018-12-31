@@ -85,10 +85,16 @@ if [[ "${DISABLE_LIBOMPTARGET}" ]]; then
   CM_OPTION_DISABLE_LIBOMPTARGET="-DOPENMP_ENABLE_LIBOMPTARGET=OFF"
 fi
 
+CMK_GENERATOR=""
+if [ $(which ninja) ]; then
+  CMK_GENERATOR="-G Ninja"
+fi
+
 # Build LLVM/Clang
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
 cmake \
+  ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
   -DSWIG_EXECUTABLE=${SWIG_EXE} \
@@ -98,11 +104,11 @@ cmake \
   ${CM_OPTION_DISABLE_LIBOMPTARGET} \
   ${GCC_CMAKE_OPTION} \
   ${SRC_DIR}/llvm
-make -j${NCPUS}
+cmake --build . -j
 if [[ "${TEST_CLANG}" ]]; then
-  make check-clang -j${NCPUS}
+  cmake --build . --target clang-test
 fi
-make install
+cmake --build . --target install
 
 cd ${SRC_DIR}
 
@@ -123,12 +129,15 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
     mkdir -p ${BUILD_DIR}/libcxxabi_build
     cd ${BUILD_DIR}/libcxxabi_build
 
-    CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
+    CC=${INSTALL_DIR}/bin/clang \
+      CXX=${INSTALL_DIR}/bin/clang++ \
+      cmake \
+      ${CMK_GENERATOR} \
       -DCMAKE_BUILD_TYPE=Release \
       -DLIBCXXABI_LIBCXX_INCLUDES=${SRC_DIR}/libcxx/include \
       ${SRC_DIR}/libcxxabi
 
-    make -j${NCPUS}
+    cmake --build . -j
     mv lib/* ${INSTALL_DIR}/lib/
   fi
 
@@ -136,8 +145,10 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
   mkdir -p ${BUILD_DIR}/libcxx_build
   cd ${BUILD_DIR}/libcxx_build
 
-  CC=${INSTALL_DIR}/bin/clang CXX=${INSTALL_DIR}/bin/clang++ cmake \
-    -G "Unix Makefiles" \
+  CC=${INSTALL_DIR}/bin/clang \
+    CXX=${INSTALL_DIR}/bin/clang++ \
+    cmake \
+    ${CMK_GENERATOR} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
     -DLLVM_PATH=${SRC_DIR}/llvm \
@@ -145,11 +156,11 @@ if [[ "$KERNEL_NAME" == "Linux" ]]; then
     -DLIBCXX_CXX_ABI_INCLUDE_PATHS="${ABI_INCL}" \
     ${SRC_DIR}/libcxx
 
-  make -j${NCPUS}
+  cmake --build . -j
   if [[ "${TEST_LIBCXX}" ]]; then
-    make check-libcxx -j${NCPUS}
+    cmake --build . --target check-libcxx
   fi
-  make install
+  cmake --build . --target install
 fi
 
 cd ${CURRENT_DIR}
