@@ -41,6 +41,7 @@ done
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
 REPO_DIR=${CLONE_DIR}/cquery
+BUILD_DIR=${REPO_DIR}/build
 echo "Cloning to ${REPO_DIR} and installing to ${INSTALL_DIR}..."
 set -e
 set -x
@@ -62,17 +63,22 @@ if [[ ! -z "$GIT_TAG" ]]; then
 fi
 
 # Compile and install
-CURRENT_DIR=$(pwd)
+CMK_GENERATOR=""
+if [ $(which ninja) ]; then
+  CMK_GENERATOR="-G Ninja"
+fi
 
-mkdir -p ${REPO_DIR}/build
-cd ${REPO_DIR}/build
+CURRENT_DIR=$(pwd)
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+
 cmake \
+  ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-  ..
-make -j${NCPUS}
-mkdir -p ${INSTALL_DIR}
-make install || { echo "Attempting superuser installation"; sudo make install; }
+  ${REPO_DIR}
+
+cmake --build ${BUILD_DIR} -- -j${NCPUS}
+cmake --build ${BUILD_DIR} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${BUILD_DIR} --target install; }
 
 cd ${CURRENT_DIR}

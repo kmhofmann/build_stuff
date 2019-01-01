@@ -6,9 +6,9 @@
 # [optional] sudo apt-get install python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
+  export NCPUS=$(($(sysctl -n hw.ncpu)))
 elif [[ "$(uname -s)" == "Linux" ]]; then
-  export NCPUS=$(($(nproc)/2))
+  export NCPUS=$(($(nproc)))
 fi
 
 print_help()
@@ -51,6 +51,7 @@ done
 
 REPO_DIR=${CLONE_DIR}/opencv
 CONTRIB_DIR=${CLONE_DIR}/opencv_contrib
+BUILD_DIR=${REPO_DIR}/build
 echo "Cloning to ${REPO_DIR} and ${CONTRIB_DIR}, and installing to ${INSTALL_DIR}..."
 set -e
 set -x
@@ -78,19 +79,25 @@ git -C ${REPO_DIR} checkout ${OPENCV_VERSION}
 git -C ${CONTRIB_DIR} checkout ${OPENCV_VERSION}
 
 # Compile and install
-CURRENT_DIR=$(pwd)
+CMK_GENERATOR=""
+if [ $(which ninja) ]; then
+  CMK_GENERATOR="-G Ninja"
+fi
 
-mkdir -p ${REPO_DIR}/build
-cd ${REPO_DIR}/build
+CURRENT_DIR=$(pwd)
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+
 cmake \
+  ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
   -DCUDA_ARCH_BIN=${CUDA_ARCH_BIN} \
   -DOPENCV_EXTRA_MODULES_PATH=${CONTRIB_DIR}/modules \
    ..
-make -j${NCPUS}
-mkdir -p ${INSTALL_DIR}
-make install || { echo "Attempting superuser installation"; sudo make install; }
+
+cmake --build ${BUILD_DIR} -- -j${NCPUS}
+cmake --build ${BUILD_DIR} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${BUILD_DIR} --target install; }
 
 cd ${CURRENT_DIR}
 
