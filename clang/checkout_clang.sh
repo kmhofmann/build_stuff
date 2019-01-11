@@ -3,7 +3,7 @@
 print_help()
 {
   echo "Usage:"
-  echo "  checkout_clang -s SRC_DIR [-t TAG] [-B] [-P] [-L] [-D] [-T] [-O] [-R] [-X]"
+  echo "  checkout_clang -s SRC_DIR [-t TAG] [-B] [-P] [-L] [-D] [-T] [-O] [-R] [-S] [-X]"
   echo ""
   echo "SRC_DIR designates the directory where the source code will be checked"
   echo "out to (and where Clang will be built)."
@@ -19,10 +19,11 @@ print_help()
   echo "-T: do not check out clang-tools"
   echo "-O: do not check out OpenMP"
   echo "-R: do not check out Compiler-RT"
+  echo "-S: do not check out test suite"
   echo "-X: do not check out libcxx/libcxxabi (out of tree)"
   echo ""
   echo "Examples:"
-  echo "  checkout_clang -s ~/clang700 -t tags/RELEASE_700/final"
+  echo "  checkout_clang -s ~/clang701 -t tags/RELEASE_701/final"
   echo "  checkout_clang -s ~/clang_trunk"
   exit 1
 }
@@ -39,6 +40,7 @@ while getopts ":s:t:BPLDTORXh" opt; do
     T) NCO_CLANG_TOOLS=1 ;;
     O) NCO_OPENMP=1 ;;
     R) NCO_COMPILERRT=1 ;;
+    S) NCO_TESTSUITE=1 ;;
     X) NCO_LIBCXX=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
@@ -58,13 +60,17 @@ cd ${SRC_DIR}
 svn co http://llvm.org/svn/llvm-project/llvm/$TAG llvm
 
 cd ${SRC_DIR}/llvm/tools
+
 svn co http://llvm.org/svn/llvm-project/cfe/$TAG clang
+
 if [[ ! "${NCO_POLLY}" ]]; then
   svn co http://llvm.org/svn/llvm-project/polly/$TAG polly
 fi
+
 if [[ ! "${NCO_LLD}" ]]; then
   svn co http://llvm.org/svn/llvm-project/lld/$TAG lld
 fi
+
 if [[ ! "${NCO_LLDB}" ]]; then
   svn co http://llvm.org/svn/llvm-project/lldb/$TAG lldb
 fi
@@ -75,14 +81,21 @@ if [[ ! "${NCO_LLDB}" ]]; then
 fi
 
 cd ${SRC_DIR}/llvm/projects
-if [[ ! "${NCO_OPENMP}" ]]; then
-  svn co http://llvm.org/svn/llvm-project/openmp/$TAG openmp
+
+svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
+svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
+
+if [[ ! "${NCO_TESTSUITE}" ]]; then
+  svn co http://llvm.org/svn/llvm-project/test-suite/$TAG test-suite
 fi
+
 if [[ ! "${NCO_COMPILERRT}" ]]; then
   svn co http://llvm.org/svn/llvm-project/compiler-rt/$TAG compiler-rt
 fi
-svn co http://llvm.org/svn/llvm-project/libcxx/$TAG libcxx
-svn co http://llvm.org/svn/llvm-project/libcxxabi/$TAG libcxxabi
+
+if [[ ! "${NCO_OPENMP}" ]]; then
+  svn co http://llvm.org/svn/llvm-project/openmp/$TAG openmp
+fi
 
 cd ${SRC_DIR}
 
