@@ -10,7 +10,7 @@ print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_ccls.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [TAG])"
+  echo "  build_doxygen.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [TAG])"
   echo ""
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
@@ -20,9 +20,9 @@ print_help()
   echo "will be checked out and built."
   echo ""
   echo "Example:"
-  echo "  build_ccls.sh -s ~/devel -t $HOME/local/cmake"
-  echo "ccls will then be cloned to and built in ~/devel/ccls, and"
-  echo "installed to $HOME/local/ccls."
+  echo "  build_doxygen.sh -s ~/devel -t $HOME/local/doxygen"
+  echo "doxygen will then be cloned to and built in ~/devel/doxygen, and"
+  echo "installed to $HOME/local/doxygen."
 }
 
 while getopts ":s:t:T:j:h" opt; do
@@ -40,7 +40,7 @@ done
 [[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
-REPO_DIR=${CLONE_DIR}/ccls
+REPO_DIR=${CLONE_DIR}/doxygen
 BUILD_DIR=${REPO_DIR}/build
 echo "Cloning to ${REPO_DIR} and installing to ${INSTALL_DIR}..."
 set -e
@@ -48,9 +48,7 @@ set -x
 
 # Clone and get to clean slate
 mkdir -p ${CLONE_DIR}
-git -C ${CLONE_DIR} clone --recursive https://github.com/MaskRay/ccls.git || true
-git -C ${REPO_DIR} submodule init
-git -C ${REPO_DIR} submodule update
+git -C ${CLONE_DIR} clone --recursive https://github.com/doxygen/doxygen.git || true
 git -C ${REPO_DIR} reset HEAD --hard
 git -C ${REPO_DIR} clean -fxd
 git -C ${REPO_DIR} checkout master
@@ -76,6 +74,7 @@ cmake \
   ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+  -Duse_libclang=ON \
   ${REPO_DIR}
 
 cmake --build ${BUILD_DIR} -- -j${NCPUS}
