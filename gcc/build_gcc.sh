@@ -17,6 +17,8 @@ print_help()
   echo "-b: Build directory. Defaults to SRC_DIR/build."
   echo "-i: Installation directory. Defaults to SRC_DIR/install."
   echo "-g: GCC version to build; defaults to ${GCC_VERSION}."
+  echo "-l: List languages to compile (e.g. \"c,c++,lto\")"
+  echo "-n: No bootstrapping process (= faster build)."
   echo "-d: Only download files; do not extract or build"
   echo "-e: Skip downloading files; assume they are already present"
   echo "-x: Exit after extracting files; do not configure or build."
@@ -31,13 +33,15 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:b:i:g:dexh" opt; do
+while getopts ":s:b:i:g:l:dnexh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
     i) INSTALL_DIR=$OPTARG ;;
     g) GCC_VERSION=$OPTARG ;;
+    l) ENABLE_LANGUAGES_STR=$OPTARG ;;
     d) ONLY_DOWNLOAD=1 ;;
+    n) NO_BOOTSTRAP=1 ;;
     e) SKIP_DOWNLOAD=1 ;;
     x) EXIT_BEFORE_BUILD=1 ;;
     h) print_help; exit 1 ;;
@@ -51,6 +55,16 @@ done
 [[ -z "$GCC_VERSION" ]] && { echo "Missing option -g"; ARGERR=1; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
+MAKE_TARGET="profiledbootstrap"
+if [ ! -z "${NO_BOOTSTRAP}" ]; then
+  DISABLE_BOOTSTRAP="--disable-bootstrap"
+  MAKE_TARGET=""
+fi
+
+if [ ! -z "${ENABLE_LANGUAGES_STR}" ]; then
+  ENABLE_LANGUAGES="--enable-languages=${ENABLE_LANGUAGES_STR}"
+fi
+
 echo "CC=${CC}"
 echo "CXX=${CXX}"
 echo "SRC_DIR=${SRC_DIR}"
@@ -59,9 +73,9 @@ echo "INSTALL_DIR=${INSTALL_DIR}"
 
 KERNEL_NAME=$(uname -s)
 if [ "$KERNEL_NAME" == "Darwin" ]; then
-  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
+  export NCPUS=$(($(sysctl -n hw.ncpu)/1))
 elif [ "$KERNEL_NAME" == "Linux" ]; then
-  export NCPUS=$(($(nproc)/2))
+  export NCPUS=$(($(nproc)/1))
 fi
 
 if [ -z "$SKIP_DOWNLOAD" ]; then
@@ -110,8 +124,8 @@ cd ${BUILD_DIR}
 [[ ! -z "$EXIT_BEFORE_BUILD" ]] && { echo "Exiting before configure/build"; exit 1; }
 
 echo "Configuring and building GCC..."
-${SRC_DIR}/gcc-${GCC_VERSION}/configure --prefix=${INSTALL_DIR}
-make profiledbootstrap -j${NCPUS}
+${SRC_DIR}/gcc-${GCC_VERSION}/configure --prefix=${INSTALL_DIR} ${DISABLE_BOOTSTRAP} ${ENABLE_LANGUAGES}
+make ${MAKE_TARGET} -j${NCPUS}
 # Running the tests fails; I suspect it's because of something missing in the test setup.
 #make -k check -j16
 #make install-strip
