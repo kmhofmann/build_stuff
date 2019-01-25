@@ -86,7 +86,7 @@ if [ -z "$SKIP_DOWNLOAD" ]; then
   fi
 
   mkdir -p ${SRC_DIR}
-  wget -c -P ${SRC_DIR} http://nl.mirror.babylon.network/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz || \
+  wget -c -P ${SRC_DIR} http://mirror.koddos.net/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz || \
     wget -c -P ${SRC_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
   wget -c -P ${SRC_DIR} https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.bz2 || \
     wget -c -P ${SRC_DIR} https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
