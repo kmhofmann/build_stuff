@@ -76,6 +76,7 @@ cmake \
   ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+  -DCMAKE_PREFIX_PATH=$(dirname $(dirname $(which clang))) \
   ${REPO_DIR}
 
 cmake --build ${BUILD_DIR} -- -j${NCPUS}
