@@ -2,20 +2,20 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="8.2.0"
+GCC_VERSION="8.3.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.18"
 MPC_VERSION="1.1.0"
-MPFR_VERSION="4.0.1"
+MPFR_VERSION="4.0.2"
 
 print_help()
 {
   echo "Usage:"
-  echo "  build_gcc -s SRC_DIR [-b BUILD_DIR] [-i INSTALL_DIR] [-g GCC_VERSION] [-d] [-e]"
+  echo "  build_gcc -s <SRC_DIR> -t <INSTALL_DIR> [-b <BUILD_DIR>] [-g <GCC_VERSION>] [-d] [-e]"
   echo ""
-  echo "-s: Directory to which the sources will be downloaded"
+  echo "-s: Directory to which the sources will be downloaded."
+  echo "-t: Installation (target) directory."
   echo "-b: Build directory. Defaults to SRC_DIR/build."
-  echo "-i: Installation directory. Defaults to SRC_DIR/install."
   echo "-g: GCC version to build; defaults to ${GCC_VERSION}."
   echo "-l: List languages to compile (e.g. \"c,c++,lto\")"
   echo "-n: No bootstrapping process (= faster build)."
@@ -24,8 +24,7 @@ print_help()
   echo "-x: Exit after extracting files; do not configure or build."
   echo ""
   echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc810 -g 8.2.0"
-  echo "  build_gcc -s ~/src/gcc550 -i ~/local/gcc550 -g 5.5.0"
+  echo "  build_gcc -s ~/src/gcc830 -t ~/local/gcc830 -g 8.3.0"
 }
 
 if [[ $# -eq 0 ]]; then
@@ -33,11 +32,11 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:b:i:g:l:dnexh" opt; do
+while getopts ":s:i:b:g:l:dnexh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
+    t) INSTALL_DIR=$OPTARG ;;
     b) BUILD_DIR=$OPTARG ;;
-    i) INSTALL_DIR=$OPTARG ;;
     g) GCC_VERSION=$OPTARG ;;
     l) ENABLE_LANGUAGES_STR=$OPTARG ;;
     d) ONLY_DOWNLOAD=1 ;;
@@ -51,7 +50,7 @@ while getopts ":s:b:i:g:l:dnexh" opt; do
 done
 [[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
 [[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
-[[ -z "$INSTALL_DIR" ]] && { INSTALL_DIR=${SRC_DIR}/install; }
+[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
 [[ -z "$GCC_VERSION" ]] && { echo "Missing option -g"; ARGERR=1; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
