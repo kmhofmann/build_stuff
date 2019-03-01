@@ -32,7 +32,7 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:i:b:g:l:dnexh" opt; do
+while getopts ":s:t:b:g:l:dnexh" opt; do
   case ${opt} in
     s) SRC_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
