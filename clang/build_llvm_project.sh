@@ -17,13 +17,11 @@ print_help()
   echo "-s: Directory to which the source should be cloned to"
   echo "    (excluding name of the repository directory; e.g. \$HOME/devel)."
   echo "-t: Installation directory (e.g. '\$HOME/local')."
-  echo "-T: Git tag to check out (e.g. 'llvmorg-7.0.1')."
+  echo "-T: Git tag to check out (e.g. 'llvmorg-8.0.0')."
   echo "-p: Projects to build, i.e. the string passed to LLVM_ENABLE_PROJECTS."
   echo "    Defaults to 'all'."
   echo "-R: Perform Clang regression tests."
   echo "-U: Perform libc++ regression tests."
-  echo "-o: Disable building of libomptarget"
-  echo "    (which might drag in CUDA, which might require an old compiler)"
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
@@ -114,7 +112,6 @@ cmake \
   -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
   -DLIBCXX_ENABLE_ASSERTIONS=OFF \
   -DLIBUNWIND_ENABLE_ASSERTIONS=OFF \
-  ${CM_OPTION_DISABLE_LIBOMPTARGET} \
   ${GCC_CMAKE_OPTION} \
   ${REPO_DIR}/llvm
 
