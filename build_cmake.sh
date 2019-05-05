@@ -23,6 +23,8 @@ print_help()
   echo "  build_cmake.sh -s ~/devel -t $HOME/local/cmake"
   echo "CMake will then be cloned to and built in ~/devel/cmake, and"
   echo "installed to $HOME/local/cmake."
+  echo ""
+  echo "Check https://gitlab.kitware.com/cmake/cmake/tags for tags."
 }
 
 while getopts ":s:t:T:j:h" opt; do
