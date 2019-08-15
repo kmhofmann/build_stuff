@@ -20,18 +20,20 @@ print_help()
   echo "-T: Git tag to check out (e.g. 'llvmorg-8.0.0')."
   echo "-p: Projects to build, i.e. the string passed to LLVM_ENABLE_PROJECTS."
   echo "    Defaults to 'all'."
+  echo "-C  String to pass to CMake command line"
   echo "-R: Perform Clang regression tests."
   echo "-U: Perform libc++ regression tests."
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:t:T:p:RUoh" opt; do
+while getopts ":s:b:t:T:p:C:RUoh" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
     T) GIT_TAG=$OPTARG ;;
     p) PROJECTS_TO_BUILD=$OPTARG ;;
+    C) SCRIPT_CMAKE_EXTRA_ARGUMENTS=$OPTARG ;;
     R) TEST_CLANG=1 ;;
     U) TEST_LIBCXX=1 ;;
     o) DISABLE_LIBOMPTARGET=1 ;;
@@ -112,6 +114,7 @@ cmake \
   -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
   -DLIBCXX_ENABLE_ASSERTIONS=OFF \
   -DLIBUNWIND_ENABLE_ASSERTIONS=OFF \
+  ${SCRIPT_CMAKE_EXTRA_ARGUMENTS} \
   ${GCC_CMAKE_OPTION} \
   ${REPO_DIR}/llvm
 
