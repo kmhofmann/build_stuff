@@ -2,7 +2,7 @@
 set -e
 
 # This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="9.1.0"
+GCC_VERSION="9.2.0"
 GMP_VERSION="6.1.2"
 ISL_VERSION="0.18"
 MPC_VERSION="1.1.0"
@@ -24,7 +24,7 @@ print_help()
   echo "-x: Exit after extracting files; do not configure or build."
   echo ""
   echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc910 -t ~/local/gcc910 -g 9.1.0"
+  echo "  build_gcc -s ~/src/gcc_${GCC_VERSION} -t ~/local/gcc_${GCC_VERSION} -g ${GCC_VERSION}"
 }
 
 if [[ $# -eq 0 ]]; then
