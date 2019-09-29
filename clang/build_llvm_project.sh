@@ -16,18 +16,19 @@ print_help()
   echo ""
   echo "-s: Directory to which the source should be cloned to"
   echo "    (excluding name of the repository directory; e.g. \$HOME/devel)."
-  echo "-t: Installation directory (e.g. '\$HOME/local')."
-  echo "-T: Git tag to check out (e.g. 'llvmorg-8.0.0')."
+  echo "-t: Installation directory (e.g. '\$HOME/local/llvm-9.0.0')."
+  echo "-T: Git tag to check out (e.g. 'llvmorg-9.0.0')."
   echo "-p: Projects to build, i.e. the string passed to LLVM_ENABLE_PROJECTS."
   echo "    Defaults to 'all'."
   echo "-C  String to pass to CMake command line"
   echo "-R: Perform Clang regression tests."
   echo "-U: Perform libc++ regression tests."
+  echo "-P: List possible projects after checking out the repository and then exit."
   echo ""
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:t:T:p:C:RUoh" opt; do
+while getopts ":s:b:t:T:p:C:RUPh" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
@@ -36,7 +37,7 @@ while getopts ":s:b:t:T:p:C:RUoh" opt; do
     C) SCRIPT_CMAKE_EXTRA_ARGUMENTS=$OPTARG ;;
     R) TEST_CLANG=1 ;;
     U) TEST_LIBCXX=1 ;;
-    o) DISABLE_LIBOMPTARGET=1 ;;
+    P) LIST_POSSIBLE_PROJECTS=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -67,6 +68,22 @@ if [[ ! -z "$GIT_TAG" ]]; then
   git -C ${REPO_DIR} checkout ${GIT_TAG}
 fi
 
+if [[ "${LIST_POSSIBLE_PROJECTS}" ]]; then
+  # Try to get list of projects from CMake file
+  PROJECTS_LIST=$(grep "^set(LLVM_ALL_PROJECTS" ${REPO_DIR}/llvm/CMakeLists.txt | cut -d\" -f2)
+  echo
+  echo "Projects that will be passed to LLVM_ENABLE_PROJECTS with the default 'all':"
+  echo "${PROJECTS_LIST}"
+  exit 0
+  ## Split list into array
+  #IFS=';' read -r -a array <<< "$PROJECTS_LIST"
+  #for ((i=0; i<${#array[@]}; ++i)); do
+  #  echo "${array[i]}"
+  #done
+  ## Join array into list
+  #PROJECTS_LIST_2=$(IFS=";"; shift; echo "${array[*]}")
+fi
+
 SWIG_EXE=$(which swig) || true
 if [[ -z "${SWIG_EXE}" ]]; then
   echo "ERROR: SWIG was not found on the system. Please install SWIG, except"
@@ -89,10 +106,6 @@ echo "INSTALL_DIR=${INSTALL_DIR}"
 echo "PROJECTS_TO_BUILD=${PROJECTS_TO_BUILD}"
 echo "GCCDIR=${GCCDIR}"
 
-if [[ "${DISABLE_LIBOMPTARGET}" ]]; then
-  CM_OPTION_DISABLE_LIBOMPTARGET="-DOPENMP_ENABLE_LIBOMPTARGET=OFF"
-fi
-
 CMK_GENERATOR=""
 if [ $(which ninja) ]; then
   CMK_GENERATOR="-G Ninja"
@@ -104,6 +117,7 @@ BUILD_DIR=${REPO_DIR}/build
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
 
+set -x
 cmake \
   ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
@@ -117,6 +131,7 @@ cmake \
   ${SCRIPT_CMAKE_EXTRA_ARGUMENTS} \
   ${GCC_CMAKE_OPTION} \
   ${REPO_DIR}/llvm
+set +x
 
 cmake --build . -j
 cmake --build . --target install/strip
