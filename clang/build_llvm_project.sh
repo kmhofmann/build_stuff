@@ -10,30 +10,34 @@ fi
 
 print_help()
 {
-  echo ""
+  echo
   echo "Usage:"
   echo "  build_clang.sh -s <SRC_DIR> -t <INSTALL_DIR> [-T <TAG>] [-p <PROJECTS>] [-R] [-U]"
-  echo ""
+  echo
   echo "-s: Directory to which the source should be cloned to"
   echo "    (excluding name of the repository directory; e.g. \$HOME/devel)."
   echo "-t: Installation directory (e.g. '\$HOME/local/llvm-9.0.0')."
   echo "-T: Git tag to check out (e.g. 'llvmorg-9.0.0')."
   echo "-p: Projects to build, i.e. the string passed to LLVM_ENABLE_PROJECTS."
   echo "    Defaults to 'all'."
+  echo "-x: Project to exclude, if -p is not passed. Can be passed multiple times."
   echo "-C  String to pass to CMake command line"
+  echo
   echo "-R: Perform Clang regression tests."
   echo "-U: Perform libc++ regression tests."
+  echo
   echo "-P: List possible projects after checking out the repository and then exit."
-  echo ""
+  echo
   echo "CC and CXX determine the compiler to be used."
 }
 
-while getopts ":s:b:t:T:p:C:RUPh" opt; do
+while getopts ":s:b:t:T:p:x:C:RUPh" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
     T) GIT_TAG=$OPTARG ;;
     p) PROJECTS_TO_BUILD=$OPTARG ;;
+    x) PROJECTS_TO_EXCLUDE+=("$OPTARG") ;;
     C) SCRIPT_CMAKE_EXTRA_ARGUMENTS=$OPTARG ;;
     R) TEST_CLANG=1 ;;
     U) TEST_LIBCXX=1 ;;
@@ -45,6 +49,7 @@ while getopts ":s:b:t:T:p:C:RUPh" opt; do
 done
 [[ -z "$CLONE_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
 [[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
+[[ "$PROJECTS_TO_EXCLUDE" ]] && [[ "$PROJECTS_TO_BUILD" ]] && { echo "-p and -x cannot be used together"; ARGERR=1; }
 [[ -z "$PROJECTS_TO_BUILD" ]] && { PROJECTS_TO_BUILD="all"; }
 [[ "$ARGERR" ]] && { print_help; exit 1; }
 
@@ -68,20 +73,21 @@ if [[ ! -z "$GIT_TAG" ]]; then
   git -C ${REPO_DIR} checkout ${GIT_TAG}
 fi
 
+# Try to get list of projects from CMake file
+PROJECTS_LIST_ALL=$(grep "^set(LLVM_ALL_PROJECTS" ${REPO_DIR}/llvm/CMakeLists.txt | cut -d\" -f2)
+
 if [[ "${LIST_POSSIBLE_PROJECTS}" ]]; then
-  # Try to get list of projects from CMake file
-  PROJECTS_LIST=$(grep "^set(LLVM_ALL_PROJECTS" ${REPO_DIR}/llvm/CMakeLists.txt | cut -d\" -f2)
-  echo
+  echo "-----"
   echo "Projects that will be passed to LLVM_ENABLE_PROJECTS with the default 'all':"
-  echo "${PROJECTS_LIST}"
+  echo "${PROJECTS_LIST_ALL}"
   exit 0
-  ## Split list into array
-  #IFS=';' read -r -a array <<< "$PROJECTS_LIST"
-  #for ((i=0; i<${#array[@]}; ++i)); do
-  #  echo "${array[i]}"
-  #done
-  ## Join array into list
-  #PROJECTS_LIST_2=$(IFS=";"; shift; echo "${array[*]}")
+fi
+
+if [[ "${PROJECTS_TO_EXCLUDE}" ]]; then
+  PROJECTS_TO_BUILD=${PROJECTS_LIST_ALL}
+  for projx in ${PROJECTS_TO_EXCLUDE[@]}; do
+    PROJECTS_TO_BUILD=${PROJECTS_TO_BUILD//$projx;}
+  done
 fi
 
 SWIG_EXE=$(which swig) || true
