@@ -70,7 +70,6 @@ cd ${REPO_DIR}
     --with-features=huge \
     --enable-multibyte \
     --enable-python3interp=yes \
-    --with-python3-config-dir=/usr/lib/python3.5/config \
     --enable-rubyinterp=yes \
     --enable-perlinterp=yes \
     --enable-luainterp=yes \
