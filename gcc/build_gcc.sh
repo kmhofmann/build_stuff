@@ -1,30 +1,35 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
-# This should be kept up-to-date with the latest (supported) versions.
-GCC_VERSION="9.2.0"
-GMP_VERSION="6.1.2"
-ISL_VERSION="0.18"
-MPC_VERSION="1.1.0"
-MPFR_VERSION="4.0.2"
+example_version='9.2.0'
+example_tag='releases/gcc-'${example_version}
+
+kernel_name=$(uname -s)
+if [ "$kernel_name" == "Darwin" ]; then
+  num_cpus=$(($(sysctl -n hw.ncpu)/1))
+elif [ "$kernel_name" == "Linux" ]; then
+  num_cpus=$(nproc)
+fi
 
 print_help()
 {
   echo "Usage:"
-  echo "  build_gcc -s <SRC_DIR> -t <INSTALL_DIR> [-b <BUILD_DIR>] [-g <GCC_VERSION>] [-d] [-e]"
-  echo ""
-  echo "-s: Directory to which the sources will be downloaded."
+  echo "  build_gcc -s <SRC_DIR> -t <INSTALL_DIR> [-T <TAG>] [-l <LANGS>] [-n] [-R]"
+  echo
+  echo "-s: Directory to which the source should be cloned to"
+  echo "    (excluding name of the repository directory; e.g. \$HOME/devel)."
   echo "-t: Installation (target) directory."
-  echo "-b: Build directory. Defaults to SRC_DIR/build."
-  echo "-g: GCC version to build; defaults to ${GCC_VERSION}."
-  echo "-l: List languages to compile (e.g. \"c,c++,lto\")"
-  echo "-n: No bootstrapping process (= faster build)."
-  echo "-d: Only download files; do not extract or build"
-  echo "-e: Skip downloading files; assume they are already present"
-  echo "-x: Exit after extracting files; do not configure or build."
-  echo ""
-  echo "Examples:"
-  echo "  build_gcc -s ~/src/gcc_${GCC_VERSION} -t ~/local/gcc_${GCC_VERSION} -g ${GCC_VERSION}"
+  echo
+  echo "-T: Git tag to check out (e.g. \"${example_tag}\"); otherwise uses 'master'."
+  echo "-l: List languages to compile (e.g. \"c,c++,lto\"); default builds all."
+  echo "-n: No profiled bootstrapping process (faster build, but potentially slower)."
+  echo "-R: Run tests."
+  echo
+  echo "-C: Only check out repository, then exit."
+  echo "-B: Skip checking out sources and downloading prerequisites; only build and install."
+  echo
+  echo "Example:"
+  echo "  build_gcc -s ~/devel -t ~/local/gcc-${example_version} -T ${example_tag}"
 }
 
 if [[ $# -eq 0 ]]; then
@@ -32,101 +37,98 @@ if [[ $# -eq 0 ]]; then
   exit 1
 fi
 
-while getopts ":s:t:b:g:l:dnexh" opt; do
+while getopts ":s:t:b:T:l:nRCBh" opt; do
   case ${opt} in
-    s) SRC_DIR=$OPTARG ;;
-    t) INSTALL_DIR=$OPTARG ;;
-    b) BUILD_DIR=$OPTARG ;;
-    g) GCC_VERSION=$OPTARG ;;
-    l) ENABLE_LANGUAGES_STR=$OPTARG ;;
-    d) ONLY_DOWNLOAD=1 ;;
-    n) NO_BOOTSTRAP=1 ;;
-    e) SKIP_DOWNLOAD=1 ;;
-    x) EXIT_BEFORE_BUILD=1 ;;
+    s) clone_dir=$OPTARG ;;
+    t) install_dir=$OPTARG ;;
+    T) git_tag=$OPTARG ;;
+    l) enable_languages_str=$OPTARG ;;
+    n) no_bootstrap=1 ;;
+    R) run_tests=1 ;;
+    C) only_checkout_repo=1 ;;
+    B) only_build_install=1 ;;
     h) print_help; exit 1 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
   esac
 done
-[[ -z "$SRC_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
-[[ -z "$BUILD_DIR" ]] && { BUILD_DIR=${SRC_DIR}/build; }
-[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
-[[ -z "$GCC_VERSION" ]] && { echo "Missing option -g"; ARGERR=1; }
+[[ -z "$clone_dir" ]] && { echo "Missing option -s"; ARGERR=1; }
+[[ -z "$install_dir" ]] && { echo "Missing option -t"; ARGERR=1; }
 [[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
 
 MAKE_TARGET="profiledbootstrap"
-if [ ! -z "${NO_BOOTSTRAP}" ]; then
+if [ ! -z "${no_bootstrap}" ]; then
   DISABLE_BOOTSTRAP="--disable-bootstrap"
   MAKE_TARGET=""
 fi
 
-if [ ! -z "${ENABLE_LANGUAGES_STR}" ]; then
-  ENABLE_LANGUAGES="--enable-languages=${ENABLE_LANGUAGES_STR}"
+if [ ! -z "${enable_languages_str}" ]; then
+  ENABLE_LANGUAGES="--enable-languages=${enable_languages_str}"
 fi
+
+repo_dir=${clone_dir}/gcc
 
 echo "CC=${CC}"
 echo "CXX=${CXX}"
-echo "SRC_DIR=${SRC_DIR}"
-echo "BUILD_DIR=${BUILD_DIR}"
-echo "INSTALL_DIR=${INSTALL_DIR}"
+echo "clone_dir=${clone_dir}"
+echo "repo_dir=${repo_dir}"
+echo "install_dir=${install_dir}"
 
-KERNEL_NAME=$(uname -s)
-if [ "$KERNEL_NAME" == "Darwin" ]; then
-  export NCPUS=$(($(sysctl -n hw.ncpu)/1))
-elif [ "$KERNEL_NAME" == "Linux" ]; then
-  export NCPUS=$(($(nproc)/1))
-fi
+function checkout_repo {
+  # Clone and get to clean slate
+  mkdir -p ${clone_dir}
+  git -C ${clone_dir} clone git://gcc.gnu.org/git/gcc.git \
+    || git -C ${clone_dir} clone https://gcc.gnu.org/git/gcc.git \
+    || true
+  git -C ${repo_dir} reset HEAD --hard
+  git -C ${repo_dir} clean -fxd
+  git -C ${repo_dir} checkout master
+  git -C ${repo_dir} pull --rebase
 
-if [ -z "$SKIP_DOWNLOAD" ]; then
-  if [[ -d "$SRC_DIR" ]]; then
-    echo "Source directory ${SRC_DIR} already exists."
-    echo "Please make sure you specify a non-existent source directory."
-    exit 1
+  # Use user-specified tag, if applicable
+  if [[ ! -z "${git_tag}" ]]; then
+    echo "git_tag=${git_tag}"
+    git -C ${repo_dir} checkout ${git_tag}
+  fi
+}
+
+function get_prerequisites {
+  cd ${repo_dir}
+
+  echo "Downloading dependencies..."
+  ./contrib/download_prerequisites
+}
+
+function configure_build_install {
+  cd ${repo_dir}
+
+  echo "Configuring and building GCC..."
+  ./configure --prefix=${install_dir} ${DISABLE_BOOTSTRAP} ${ENABLE_LANGUAGES}
+  make ${MAKE_TARGET} -j${num_cpus}
+
+  if [ ! -z "${run_tests}" ]; then
+    # Running the tests fails; I suspect it's because of something missing in the test setup.
+    make -k check -j${num_cpus}
   fi
 
-  mkdir -p ${SRC_DIR}
-  wget -c -P ${SRC_DIR} http://mirror.koddos.net/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz || \
-    wget -c -P ${SRC_DIR} ftp://ftp.gwdg.de/pub/misc/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
-  wget -c -P ${SRC_DIR} https://gmplib.org/download/gmp/gmp-${GMP_VERSION}.tar.bz2 || \
-    wget -c -P ${SRC_DIR} https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.bz2
-  wget -c -P ${SRC_DIR} ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-${ISL_VERSION}.tar.bz2
-  wget -c -P ${SRC_DIR} ftp://ftp.gnu.org/gnu/mpc/mpc-${MPC_VERSION}.tar.gz
-  wget -c -P ${SRC_DIR} http://www.mpfr.org/mpfr-${MPFR_VERSION}/mpfr-${MPFR_VERSION}.tar.bz2 || \
-    wget -c -P ${SRC_DIR} https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
+  echo "Installing GCC..."
+  #make install-strip
+  make install
+}
+
+current_dir=$(pwd)
+
+if [ ! "${only_build_install}" ]; then
+  checkout_repo
+
+  if [ "${only_checkout_repo}" ]; then
+    echo "Checked out repository; exiting now."
+    exit 0
+  fi
+
+  get_prerequisites
 fi
 
-[[ ! -z "$ONLY_DOWNLOAD" ]] && { echo "Exiting after download"; exit 1; }
+configure_build_install
 
-echo "Checking existence of required files..."
-[[ ! -f "${SRC_DIR}/gcc-${GCC_VERSION}.tar.gz" ]] && { echo "Missing file."; exit 1; }
-[[ ! -f "${SRC_DIR}/gmp-${GMP_VERSION}.tar.bz2" ]] && { echo "Missing file."; exit 1; }
-[[ ! -f "${SRC_DIR}/isl-${ISL_VERSION}.tar.bz2" ]] && { echo "Missing file."; exit 1; }
-[[ ! -f "${SRC_DIR}/mpc-${MPC_VERSION}.tar.gz" ]] && { echo "Missing file."; exit 1; }
-[[ ! -f "${SRC_DIR}/mpfr-${MPFR_VERSION}.tar.bz2" ]] && { echo "Missing file."; exit 1; }
-
-echo "Extracting files..."
-tar xf ${SRC_DIR}/gcc-${GCC_VERSION}.tar.gz -C ${SRC_DIR}
-tar xf ${SRC_DIR}/gmp-${GMP_VERSION}.tar.bz2 -C ${SRC_DIR}
-tar xf ${SRC_DIR}/isl-${ISL_VERSION}.tar.bz2 -C ${SRC_DIR}
-tar xf ${SRC_DIR}/mpc-${MPC_VERSION}.tar.gz -C ${SRC_DIR}
-tar xf ${SRC_DIR}/mpfr-${MPFR_VERSION}.tar.bz2 -C ${SRC_DIR}
-
-mv ${SRC_DIR}/gmp-${GMP_VERSION} ${SRC_DIR}/gcc-${GCC_VERSION}/gmp
-mv ${SRC_DIR}/isl-${ISL_VERSION} ${SRC_DIR}/gcc-${GCC_VERSION}/isl
-mv ${SRC_DIR}/mpc-${MPC_VERSION} ${SRC_DIR}/gcc-${GCC_VERSION}/mpc
-mv ${SRC_DIR}/mpfr-${MPFR_VERSION} ${SRC_DIR}/gcc-${GCC_VERSION}/mpfr
-
-CURRENT_DIR=$(pwd)
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
-
-[[ ! -z "$EXIT_BEFORE_BUILD" ]] && { echo "Exiting before configure/build"; exit 1; }
-
-echo "Configuring and building GCC..."
-${SRC_DIR}/gcc-${GCC_VERSION}/configure --prefix=${INSTALL_DIR} ${DISABLE_BOOTSTRAP} ${ENABLE_LANGUAGES}
-make ${MAKE_TARGET} -j${NCPUS}
-# Running the tests fails; I suspect it's because of something missing in the test setup.
-#make -k check -j16
-#make install-strip
-make install
-cd ${CURRENT_DIR}
+cd ${current_dir}
