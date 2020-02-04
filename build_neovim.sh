@@ -67,7 +67,5 @@ cd ${REPO_DIR}
 
 make CMAKE_BUILD_TYPE=Release CMAKE_EXTRA_FLAGS="-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}"
 make install || { echo "Attempting superuser installation"; sudo make install; }
-pip2 install --user --upgrade neovim
-pip3 install --user --upgrade neovim
 
 cd ${CURRENT_DIR}
