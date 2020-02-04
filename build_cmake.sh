@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# sudo apt install libssl-dev
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
   export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$(uname -s)" == "Linux" ]]; then

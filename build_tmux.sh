@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# sudo apt-get install automake pkg-config libevent-dev libncurses-dev
+# sudo apt-get install automake pkg-config libevent-dev libncurses-dev bison
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   export NCPUS=`sysctl -n hw.ncpu`

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Ubuntu 18.04:
+# sudo apt install clang clang-7 libclang-7-dev
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
   export NCPUS=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$(uname -s)" == "Linux" ]]; then
@@ -8,29 +11,34 @@ fi
 
 print_help()
 {
-  echo ""
+  echo
   echo "Usage:"
-  echo "  build_ccls.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [TAG])"
-  echo ""
+  echo "  build_ccls.sh -s <SOURCE_DIR> -t <INSTALL_DIR> [-T <TAG>] [-p <CLANG_PREFIX_PATH>]"
+  echo
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
-  echo ""
+  echo
   echo "Optionally, a repository tag can be specified with -T to build a"
   echo "certain release. If not specified, the latest commit from master"
   echo "will be checked out and built."
-  echo ""
+  echo
+  echo "A path where libclang is located can be explicitly specified with the"
+  echo "-p option. The designated path will be used as CMAKE_PREFIX_PATH and"
+  echo "should have the usual subdirectories: bin, include, lib, ..."
+  echo
   echo "Example:"
   echo "  build_ccls.sh -s ~/devel -t $HOME/local/cmake"
   echo "ccls will then be cloned to and built in ~/devel/ccls, and"
   echo "installed to $HOME/local/ccls."
 }
 
-while getopts ":s:t:T:j:h" opt; do
+while getopts ":s:t:T:j:p:h" opt; do
   case ${opt} in
     s) CLONE_DIR=$OPTARG ;;
     t) INSTALL_DIR=$OPTARG ;;
     T) GIT_TAG=$OPTARG ;;
     j) NCPUS=$OPTARG ;;
+    p) opt_clang_prefix_path=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
     \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
@@ -72,11 +80,15 @@ CURRENT_DIR=$(pwd)
 mkdir -p ${BUILD_DIR}
 cd ${BUILD_DIR}
 
+if [[ "$opt_clang_prefix_path" ]]; then
+  cmake_clang_prefix_path=${opt_clang_prefix_path}
+fi
+
 cmake \
   ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-  -DCMAKE_PREFIX_PATH=$(dirname $(dirname $(which clang))) \
+  -DCMAKE_PREFIX_PATH=${cmake_clang_prefix_path} \
   ${REPO_DIR}
 
 cmake --build ${BUILD_DIR} -- -j${NCPUS}
