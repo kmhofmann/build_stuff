@@ -2,29 +2,23 @@
 
 # sudo apt install libssl-dev
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  export nr_cpus=$(($(sysctl -n hw.ncpu)/2))
-elif [[ "$(uname -s)" == "Linux" ]]; then
-  export nr_cpus=$(($(nproc)/2))
-fi
+software_name="cmake"
 
-print_help()
-{
-  echo ""
-  echo "Usage:"
-  echo "  build_cmake.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [TAG])"
-  echo ""
-  echo "where SOURCE_DIR specifies the directory where the source should be"
-  echo "cloned to, and INSTALL_DIR specifies the installation directory."
-  echo ""
-  echo "Optionally, a repository tag can be specified with -T to build a"
-  echo "certain release (e.g. 'v3.11.1'). If not specified, the latest tag will"
-  echo "be checked out; this may include pre-release versions."
-  echo ""
-  echo "Example:"
-  echo "  build_cmake.sh -s ~/devel -t $HOME/local/cmake"
-  echo "CMake will then be cloned to and built in ~/devel/cmake, and"
-  echo "installed to $HOME/local/cmake."
+this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ${this_script_dir}/_utils/build_helper_functions.sh
+
+init_build_script
+get_default__nr_cpus
+get_default__clone_dir
+get_default__repo_dir ${software_name}
+get_default__install_dir ${software_name}
+git_tag="__LATEST__"
+
+print_help_additional_options() {
+  :
+}
+
+print_help_additional_options_description() {
   echo ""
   echo "Check https://gitlab.kitware.com/cmake/cmake/tags for tags."
 }
@@ -44,35 +38,13 @@ done
 [[ -z "$install_dir" ]] && { echo "Missing option -t"; arg_err=1; }
 [[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
-repo_dir=${clone_dir}/cmake
-echo "Cloning to ${repo_dir} and installing to ${install_dir}..."
-set -e
-set -x
-
-# Clone and get to clean slate
-mkdir -p ${clone_dir}
-git -C ${clone_dir} clone https://gitlab.kitware.com/cmake/cmake.git || true
-git -C ${repo_dir} clean -fxd
-git -C ${repo_dir} checkout master
-git -C ${repo_dir} pull --rebase
-
-# Get the tag of the latest released version
-if [[ -z "$git_tag" ]]; then
-  echo "Determining latest release tag..."
-  git_tag=$(git -C ${repo_dir} describe --abbrev=0 --tags)
-fi
-echo "git_tag=${git_tag}"
-
-git -C ${repo_dir} checkout ${git_tag}
+check_variables
+clone_or_update_repo https://gitlab.kitware.com/cmake/cmake.git ${repo_dir} ${git_tag}
 
 # Compile and install
-current_dir=$(pwd)
-
 cd ${repo_dir}
 ./bootstrap --prefix=${install_dir} --parallel=${nr_cpus}
 make -j${nr_cpus}
 mkdir -p ${install_dir}
 make install || { echo "Attempting superuser installation"; sudo make install; }
-
-cd ${current_dir}
 
