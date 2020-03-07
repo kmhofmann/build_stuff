@@ -63,8 +63,8 @@ cd ${repo_dir}
     --enable-rubyinterp=yes \
     --enable-perlinterp=yes \
     --enable-luainterp=yes \
-    --enable-gui=gtk2 \
     --enable-cscope
+    #--enable-gui=gtk2 \
 make -j${nr_cpus}
 
 [[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
