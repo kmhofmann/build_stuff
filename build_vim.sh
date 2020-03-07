@@ -9,6 +9,7 @@
 #    python3-dev ruby-dev lua5.1 lua5.1-dev libperl-dev git
 
 software_name="vim"
+git_uri="https://github.com/vim/vim.git"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   echo "Not tested on MacOS. Homebrew provides an up-to-date version of vim."
@@ -34,12 +35,13 @@ print_help_additional_options_description() {
   :
 }
 
-while getopts ":s:t:T:j:h" opt; do
+while getopts ":s:t:T:j:Ch" opt; do
   case ${opt} in
     s) clone_dir=$OPTARG ;;
     t) install_dir=$OPTARG ;;
     T) git_tag=$OPTARG; echo "Using git_tag=${git_tag}" ;;
     j) nr_cpus=$OPTARG ;;
+    C) opt_clean_install_dir=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
     \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
@@ -48,13 +50,9 @@ done
 [[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
 check_variables
-clone_or_update_repo \
-  https://github.com/vim/vim.git \
-  ${repo_dir} \
-  ${git_tag}
+clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
 
 # Compile and install
-mkdir -p ${install_dir}
 cd ${repo_dir}
 
 ./configure \
@@ -68,5 +66,6 @@ cd ${repo_dir}
     --enable-gui=gtk2 \
     --enable-cscope
 make -j${nr_cpus}
-make install || { echo "Attempting superuser installation"; sudo make install; }
 
+[[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
+make install || { echo "Attempting superuser installation"; sudo make install; }

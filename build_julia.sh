@@ -6,6 +6,7 @@
 # $ sudo apt-get install build-essential libatomic1 python gfortran perl wget m4 cmake pkg-config
 
 software_name="julia"
+git_uri="git://github.com/JuliaLang/julia.git"
 
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
@@ -44,10 +45,7 @@ done
 echo "Cloning to and installing in ${install_dir}..."
 set -e
 
-clone_or_update_repo \
-  git://github.com/JuliaLang/julia.git \
-  ${install_dir} \
-  ${git_tag}
+clone_or_update_repo ${git_uri} ${install_dir} ${git_tag}
 
 # Compile and install
 cd ${install_dir}

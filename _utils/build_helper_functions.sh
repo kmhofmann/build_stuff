@@ -11,7 +11,7 @@ print_help()
 {
   echo
   echo "Usage:"
-  echo "  ${this_script_name} [-s <SOURCE_DIR>] [-t <INSTALL_DIR>] [-T <TAG>]"
+  echo "  ${this_script_name} [-s <SOURCE_DIR>] [-t <INSTALL_DIR>] [-T <TAG>] [-C]"
   print_help_additional_options
   echo
   echo "Options:"
@@ -21,6 +21,8 @@ print_help()
   echo "                    (default: ${install_dir})"
   echo "  -T <TAG>          The Git repository tag that will be checked out."
   echo "                    (default: ${git_tag})"
+  echo "  -C                Clean installation directory before installation"
+  echo "                    step (POTENTIALLY DANGEROUS)."
   print_help_additional_options_description
 }
 
@@ -103,11 +105,22 @@ clone_or_update_repo()
   git -C ${repo_dir} submodule update
 }
 
-cleanup_repo_dir()
+#cleanup_repo_dir()
+#{
+#  local repo_dir=$1
+#  if [[ "${repo_dir}" =~ "/tmp" ]]; then
+#    echo "***** rm -rf ${repo_dir}"
+#  fi
+#}
+
+clean_install_dir()
 {
-  local repo_dir=$1
-  if [[ "${repo_dir}" =~ "/tmp" ]]; then
-    echo "rm -rf ${repo_dir}"
+  [[ $# -ne 1 ]] && echo "ERROR: Illegal number of function arguments." && exit 1
+  local install_dir=$1
+
+  if [[ -d "${install_dir}" ]]; then
+    echo "Deleting installation directory ${install_dir}..."
+    rm -r ${install_dir}
   fi
 }
 

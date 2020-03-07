@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 software_name="fzy"
+git_uri="https://github.com/jhawthorn/fzy.git"
 
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
@@ -20,12 +21,13 @@ print_help_additional_options_description() {
   :
 }
 
-while getopts ":s:t:T:j:h" opt; do
+while getopts ":s:t:T:j:Ch" opt; do
   case ${opt} in
     s) clone_dir=$OPTARG ;;
     t) install_dir=$OPTARG ;;
     T) git_tag=$OPTARG ;;
     j) nr_cpus=$OPTARG ;;
+    C) opt_clean_install_dir=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
     \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
@@ -36,14 +38,12 @@ done
 [[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
 check_variables
-clone_or_update_repo \
-  https://github.com/jhawthorn/fzy.git \
-  ${repo_dir} \
-  ${git_tag}
+clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
 
 # Compile and install
 cd ${repo_dir}
 export PREFIX=${install_dir}
 make -j${nr_cpus}
-make install || { echo "Attempting superuser installation"; sudo make install; }
 
+[[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
+make install || { echo "Attempting superuser installation"; sudo make install; }

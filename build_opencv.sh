@@ -6,6 +6,8 @@
 # [optional] sudo apt-get install python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
 
 software_name="opencv"
+git_uri="https://github.com/opencv/opencv.git"
+git_uri_contrib="https://github.com/opencv/opencv_contrib.git"
 
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
@@ -22,17 +24,18 @@ print_help_additional_options() {
 }
 
 print_help_additional_options_description() {
-  echo "  -C <CUDA_ARCH_BIN>  CMake variable determining the CUDA core architecture."
+  echo "  -A <CUDA_ARCH_BIN>  CMake variable determining the CUDA core architecture."
   echo "                      Defaults to "${cuda_arch_bin}"."
 }
 
-while getopts ":s:t:T:C:j:h" opt; do
+while getopts ":s:t:T:A:j:Ch" opt; do
   case ${opt} in
     s) clone_dir=$OPTARG ;;
     t) install_dir=$OPTARG ;;
     T) git_tag=$OPTARG ;;
-    C) cuda_arch_bin=$OPTARG ;;
+    A) cuda_arch_bin=$OPTARG ;;
     j) nr_cpus=$OPTARG ;;
+    C) opt_clean_install_dir=1 ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
     \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
@@ -44,23 +47,15 @@ repo_dir=${clone_dir}/opencv
 contrib_dir=${clone_dir}/opencv_contrib
 
 check_variables
-
-clone_or_update_repo \
-  https://github.com/opencv/opencv.git \
-  ${repo_dir} \
-  ${git_tag}
-
-clone_or_update_repo \
-  https://github.com/opencv/opencv_contrib.git \
-  ${contrib_dir} \
-  ${git_tag}
+clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
+clone_or_update_repo ${git_uri_contrib} ${contrib_dir} ${git_tag}
 
 echo "cuda_arch_bin=${cuda_arch_bin}"
 
 # Compile and install
-cmk_generator=""
+cmake_generator=""
 if [ $(which ninja) ]; then
-  cmk_generator="-G Ninja"
+  cmake_generator="-G Ninja"
 fi
 
 build_dir=${repo_dir}/build
@@ -68,7 +63,7 @@ mkdir -p ${build_dir}
 cd ${build_dir}
 
 cmake \
-  ${cmk_generator} \
+  ${cmake_generator} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${install_dir} \
   -Dcuda_arch_bin=${cuda_arch_bin} \
@@ -76,5 +71,7 @@ cmake \
    ..
 
 cmake --build ${build_dir} -- -j${nr_cpus}
+
+[[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
 cmake --build ${build_dir} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${build_dir} --target install; }
 

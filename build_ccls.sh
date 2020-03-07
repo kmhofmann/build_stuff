@@ -4,6 +4,7 @@
 # sudo apt install clang clang-7 libclang-7-dev
 
 software_name="ccls"
+git_uri="https://github.com/MaskRay/ccls.git"
 
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
@@ -25,12 +26,13 @@ print_help_additional_options_description() {
   echo "                          the usual subdirectories: bin, include, lib, ..."
 }
 
-while getopts ":s:t:T:j:p:h" opt; do
+while getopts ":s:t:T:j:Cp:h" opt; do
   case ${opt} in
     s) clone_dir=$OPTARG ;;
     t) install_dir=$OPTARG ;;
     T) git_tag=$OPTARG ;;
     j) nr_cpus=$OPTARG ;;
+    C) opt_clean_install_dir=1 ;;
     p) opt_clang_prefix_path=$OPTARG ;;
     h) print_help; exit 0 ;;
     :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
@@ -40,29 +42,31 @@ done
 [[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
 check_variables
-clone_or_update_repo https://github.com/MaskRay/ccls.git ${repo_dir} ${git_tag}
+clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
 
 # Compile and install
-cmk_generator=""
+cmake_generator=""
 if [ $(which ninja) ]; then
-  cmk_generator="-G Ninja"
+  cmake_generator="-G Ninja"
+fi
+
+if [[ "$opt_clang_prefix_path" ]]; then
+  cmake_clang_prefix_path=${opt_clang_prefix_path}
 fi
 
 build_dir=${repo_dir}/build
 mkdir -p ${build_dir}
 cd ${build_dir}
 
-if [[ "$opt_clang_prefix_path" ]]; then
-  cmake_clang_prefix_path=${opt_clang_prefix_path}
-fi
-
 cmake \
-  ${cmk_generator} \
+  ${cmake_generator} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=${install_dir} \
   -DCMAKE_PREFIX_PATH=${cmake_clang_prefix_path} \
   ${repo_dir}
 
 cmake --build ${build_dir} -- -j${nr_cpus}
+
+[[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
 cmake --build ${build_dir} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${build_dir} --target install; }
 
