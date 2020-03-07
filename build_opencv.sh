@@ -6,9 +6,9 @@
 # [optional] sudo apt-get install python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  export NCPUS=$(($(sysctl -n hw.ncpu)))
+  export nr_cpus=$(($(sysctl -n hw.ncpu)))
 elif [[ "$(uname -s)" == "Linux" ]]; then
-  export NCPUS=$(($(nproc)))
+  export nr_cpus=$(($(nproc)))
 fi
 
 print_help()
@@ -34,48 +34,48 @@ print_help()
 
 while getopts ":s:t:T:C:j:h" opt; do
   case ${opt} in
-    s) CLONE_DIR=$OPTARG ;;
-    t) INSTALL_DIR=$OPTARG ;;
+    s) clone_dir=$OPTARG ;;
+    t) install_dir=$OPTARG ;;
     T) OPENCV_VERSION=$OPTARG ;;
     C) CUDA_ARCH_BIN=$OPTARG ;;
-    j) NCPUS=$OPTARG ;;
+    j) nr_cpus=$OPTARG ;;
     h) print_help; exit 0 ;;
-    :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
-    \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
+    :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
+    \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
   esac
 done
-[[ -z "$CLONE_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
-[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
+[[ -z "$clone_dir" ]] && { echo "Missing option -s"; arg_err=1; }
+[[ -z "$install_dir" ]] && { echo "Missing option -t"; arg_err=1; }
 [[ -z "$CUDA_ARCH_BIN" ]] && { CUDA_ARCH_BIN="5.2 6.1"; }
-[[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
+[[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
-REPO_DIR=${CLONE_DIR}/opencv
-CONTRIB_DIR=${CLONE_DIR}/opencv_contrib
-BUILD_DIR=${REPO_DIR}/build
-echo "Cloning to ${REPO_DIR} and ${CONTRIB_DIR}, and installing to ${INSTALL_DIR}..."
+repo_dir=${clone_dir}/opencv
+CONTRIB_DIR=${clone_dir}/opencv_contrib
+build_dir=${repo_dir}/build
+echo "Cloning to ${repo_dir} and ${CONTRIB_DIR}, and installing to ${install_dir}..."
 set -e
 set -x
 
 # Clone and get to clean slate
-mkdir -p ${CLONE_DIR}
-git -C ${CLONE_DIR} clone https://github.com/opencv/opencv.git || true
-git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} checkout master
-git -C ${REPO_DIR} pull --rebase
+mkdir -p ${clone_dir}
+git -C ${clone_dir} clone https://github.com/opencv/opencv.git || true
+git -C ${repo_dir} clean -fxd
+git -C ${repo_dir} checkout master
+git -C ${repo_dir} pull --rebase
 
-git -C ${CLONE_DIR} clone https://github.com/opencv/opencv_contrib.git || true
+git -C ${clone_dir} clone https://github.com/opencv/opencv_contrib.git || true
 git -C ${CONTRIB_DIR} clean -fxd
 git -C ${CONTRIB_DIR} checkout master
 git -C ${CONTRIB_DIR} pull --rebase
 
 # Get the tag of the latest released version
 if [[ -z "$OPENCV_VERSION" ]]; then
-  OPENCV_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
+  OPENCV_VERSION=$(git -C ${repo_dir} describe --abbrev=0 --tags)
 fi
 echo "OPENCV_VERSION=${OPENCV_VERSION}"
 echo "CUDA_ARCH_BIN=${CUDA_ARCH_BIN}"
 
-git -C ${REPO_DIR} checkout ${OPENCV_VERSION}
+git -C ${repo_dir} checkout ${OPENCV_VERSION}
 git -C ${CONTRIB_DIR} checkout ${OPENCV_VERSION}
 
 # Compile and install
@@ -84,20 +84,20 @@ if [ $(which ninja) ]; then
   CMK_GENERATOR="-G Ninja"
 fi
 
-CURRENT_DIR=$(pwd)
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
+current_dir=$(pwd)
+mkdir -p ${build_dir}
+cd ${build_dir}
 
 cmake \
   ${CMK_GENERATOR} \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
+  -DCMAKE_INSTALL_PREFIX=${install_dir} \
   -DCUDA_ARCH_BIN=${CUDA_ARCH_BIN} \
   -DOPENCV_EXTRA_MODULES_PATH=${CONTRIB_DIR}/modules \
    ..
 
-cmake --build ${BUILD_DIR} -- -j${NCPUS}
-cmake --build ${BUILD_DIR} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${BUILD_DIR} --target install; }
+cmake --build ${build_dir} -- -j${nr_cpus}
+cmake --build ${build_dir} --target install || { echo "Attempting superuser installation"; sudo cmake --build ${build_dir} --target install; }
 
-cd ${CURRENT_DIR}
+cd ${current_dir}
 

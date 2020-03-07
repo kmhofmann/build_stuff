@@ -9,19 +9,19 @@
 #    python3-dev ruby-dev lua5.1 lua5.1-dev libperl-dev git
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  export NCPUS=`sysctl -n hw.ncpu`
+  export nr_cpus=`sysctl -n hw.ncpu`
   echo "Not tested on MacOS. Homebrew provides an up-to-date version of vim."
   echo "Exiting..."
   exit 1
 elif [[ "$(uname -s)" == "Linux" ]]; then
-  export NCPUS=`nproc`
+  export nr_cpus=`nproc`
 fi
 
 print_help()
 {
   echo ""
   echo "Usage:"
-  echo "  build_vim.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [GIT_TAG])"
+  echo "  build_vim.sh -s [SOURCE_DIR] -t [INSTALL_DIR] (-T [git_tag])"
   echo "where SOURCE_DIR specifies the directory where the source should be"
   echo "cloned to, and INSTALL_DIR specifies the installation directory."
   echo "Example:"
@@ -32,41 +32,41 @@ print_help()
 
 while getopts ":s:t:T:j:h" opt; do
   case ${opt} in
-    s) CLONE_DIR=$OPTARG ;;
-    t) INSTALL_DIR=$OPTARG ;;
-    T) GIT_TAG=$OPTARG; echo "Using GIT_TAG=${GIT_TAG}" ;;
-    j) NCPUS=$OPTARG ;;
+    s) clone_dir=$OPTARG ;;
+    t) install_dir=$OPTARG ;;
+    T) git_tag=$OPTARG; echo "Using git_tag=${git_tag}" ;;
+    j) nr_cpus=$OPTARG ;;
     h) print_help; exit 0 ;;
-    :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
-    \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
+    :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
+    \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
   esac
 done
-[[ -z "$CLONE_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
-[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
-[[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
+[[ -z "$clone_dir" ]] && { echo "Missing option -s"; arg_err=1; }
+[[ -z "$install_dir" ]] && { echo "Missing option -t"; arg_err=1; }
+[[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
-REPO_DIR=${CLONE_DIR}/vim
-echo "Cloning to ${REPO_DIR}, and installing to ${INSTALL_DIR}..."
+repo_dir=${clone_dir}/vim
+echo "Cloning to ${repo_dir}, and installing to ${install_dir}..."
 set -e
 set -x
 
 # Clone and get to clean slate
-mkdir -p ${CLONE_DIR}
-git -C ${CLONE_DIR} clone https://github.com/vim/vim.git || true
-git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} checkout master
-git -C ${REPO_DIR} pull --rebase
-if [ ! -z "$GIT_TAG" ]; then
-  git -C ${REPO_DIR} checkout ${GIT_TAG}
+mkdir -p ${clone_dir}
+git -C ${clone_dir} clone https://github.com/vim/vim.git || true
+git -C ${repo_dir} clean -fxd
+git -C ${repo_dir} checkout master
+git -C ${repo_dir} pull --rebase
+if [ ! -z "$git_tag" ]; then
+  git -C ${repo_dir} checkout ${git_tag}
 fi
 
 # Compile and install
-CURRENT_DIR=$(pwd)
-mkdir -p ${INSTALL_DIR}
-cd ${REPO_DIR}
+current_dir=$(pwd)
+mkdir -p ${install_dir}
+cd ${repo_dir}
 
 ./configure \
-    --prefix=${INSTALL_DIR} \
+    --prefix=${install_dir} \
     --with-features=huge \
     --enable-multibyte \
     --enable-python3interp=yes \
@@ -75,7 +75,7 @@ cd ${REPO_DIR}
     --enable-luainterp=yes \
     --enable-gui=gtk2 \
     --enable-cscope
-make -j${NCPUS}
+make -j${nr_cpus}
 make install || { echo "Attempting superuser installation"; sudo make install; }
 
-cd ${CURRENT_DIR}
+cd ${current_dir}

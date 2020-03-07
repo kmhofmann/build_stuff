@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
-  export NCPUS=$(($(sysctl -n hw.ncpu)/2))
+  export nr_cpus=$(($(sysctl -n hw.ncpu)/2))
 elif [[ "$(uname -s)" == "Linux" ]]; then
-  export NCPUS=$(($(nproc)/2))
+  export nr_cpus=$(($(nproc)/2))
 fi
 
 print_help()
@@ -27,51 +27,51 @@ print_help()
 
 while getopts ":s:t:T:C:j:h" opt; do
   case ${opt} in
-    s) CLONE_DIR=$OPTARG ;;
-    t) INSTALL_DIR=$OPTARG ;;
+    s) clone_dir=$OPTARG ;;
+    t) install_dir=$OPTARG ;;
     T) CMUS_VERSION=$OPTARG ;;
-    j) NCPUS=$OPTARG ;;
+    j) nr_cpus=$OPTARG ;;
     h) print_help; exit 0 ;;
-    :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
-    \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
+    :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
+    \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
   esac
 done
-[[ -z "$CLONE_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
-[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
-[[ ! -z "$ARGERR" ]] && { print_help; exit 1; }
+[[ -z "$clone_dir" ]] && { echo "Missing option -s"; arg_err=1; }
+[[ -z "$install_dir" ]] && { echo "Missing option -t"; arg_err=1; }
+[[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
-REPO_DIR=${CLONE_DIR}/cmus
-echo "Cloning to ${REPO_DIR} and installing to ${INSTALL_DIR}..."
+repo_dir=${clone_dir}/cmus
+echo "Cloning to ${repo_dir} and installing to ${install_dir}..."
 set -e
 set -x
 
 # Clone and get to clean slate
-mkdir -p ${CLONE_DIR}
-git -C ${CLONE_DIR} clone https://github.com/cmus/cmus.git || true
-git -C ${REPO_DIR} reset HEAD --hard
-git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} fetch
+mkdir -p ${clone_dir}
+git -C ${clone_dir} clone https://github.com/cmus/cmus.git || true
+git -C ${repo_dir} reset HEAD --hard
+git -C ${repo_dir} clean -fxd
+git -C ${repo_dir} fetch
 
 # Get the tag of the latest released version
 #if [[ -z "$CMUS_VERSION" ]]; then
-#  CMUS_VERSION=$(git -C ${REPO_DIR} describe --abbrev=0 --tags)
+#  CMUS_VERSION=$(git -C ${repo_dir} describe --abbrev=0 --tags)
 #fi
 
 if [[ "$CMUS_VERSION" ]]; then
   echo "CMUS_VERSION=${CMUS_VERSION}"
-  git -C ${REPO_DIR} checkout ${CMUS_VERSION}
+  git -C ${repo_dir} checkout ${CMUS_VERSION}
 else
-  git -C ${REPO_DIR} checkout master
+  git -C ${repo_dir} checkout master
 fi
 
 # Compile and install
-CURRENT_DIR=$(pwd)
+current_dir=$(pwd)
 
-cd ${REPO_DIR}
-./configure prefix=${INSTALL_DIR}
-make -j${NCPUS}
-mkdir -p ${INSTALL_DIR}
+cd ${repo_dir}
+./configure prefix=${install_dir}
+make -j${nr_cpus}
+mkdir -p ${install_dir}
 make install || { echo "Attempting superuser installation"; sudo make install; }
 
-cd ${CURRENT_DIR}
+cd ${current_dir}
 
