@@ -11,12 +11,6 @@
 software_name="vim"
 git_uri="https://github.com/vim/vim.git"
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  echo "Not tested on MacOS. Homebrew provides an up-to-date version of vim."
-  echo "Exiting..."
-  exit 1
-fi
-
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
 

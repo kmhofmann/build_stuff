@@ -2,6 +2,9 @@
 
 # Ubuntu 18.04:
 # sudo apt install clang clang-7 libclang-7-dev
+#
+# macOS: best to install with brew
+# brew install --HEAD ccls
 
 software_name="ccls"
 git_uri="https://github.com/MaskRay/ccls.git"

@@ -1,20 +1,16 @@
 #!/usr/bin/env bash
 
 # Prerequisites, according to
-# https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
+# https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites
 #
-# $ sudo apt-get install libncurses5-dev libgnome2-dev libgnomeui-dev \
-#    libgtk2.0-dev libatk1.0-dev libbonoboui2-dev \
-#    libcairo2-dev libx11-dev libxpm-dev libxt-dev python-dev \
-#    python3-dev ruby-dev lua5.1 lua5.1-dev libperl-dev git
+# Ubuntu/Debian:
+# sudo apt-get install ninja-build gettext libtool libtool-bin autoconf automake cmake g++ pkg-config unzip
+#
+# macOS:
+# brew install ninja libtool automake cmake pkg-config gettext
 
 software_name="neovim"
 git_uri="https://github.com/neovim/neovim.git"
-
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  echo "Not tested on MacOS. Homebrew provides an up-to-date version of Neovim."
-  echo "Exiting..."
-fi
 
 this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 source ${this_script_dir}/_utils/build_helper_functions.sh
