@@ -1,203 +1,184 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # NOTE: to sucessfully build lldb on Mac OS X, you will have to do this:
 # https://llvm.org/svn/llvm-project/lldb/trunk/docs/code-signing.txt
 
+software_name="llvm-project"
+git_uri="https://github.com/llvm/llvm-project.git"
+
+this_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source ${this_script_dir}/../_utils/build_helper_functions.sh
+source ${this_script_dir}/../_utils/llvm_helper_functions.sh
+
+init_build_script
+get_default__nr_cpus
+get_default__clone_dir
+get_default__repo_dir ${software_name}
+get_default__install_dir ${software_name}
+get_default__git_tag
+
 if [[ "$(uname -s)" == "Linux" ]]; then
-  export GCCDIR=$(dirname $(which gcc))/../
-  export GCC_CMAKE_OPTION="-DGCC_INSTALL_PREFIX=$GCCDIR"
+  export gccdir=$(dirname $(which gcc))/../
+  export gcc_cmake_option="-DGCC_INSTALL_PREFIX=${gccdir}"
 fi
 
-print_help()
-{
+print_help_additional_options() {
+  echo "          [-p <PROJECTS_TO_BUILD>] [-x <PROJECT_TO_EXCLUDE>]"
+  echo "          [-C <CMAKE_STRING>] [-R] [-U] [-P]"
+}
+
+print_help_additional_options_description() {
   echo
-  echo "Usage:"
-  echo "  build_clang.sh -s <SRC_DIR> -t <INSTALL_DIR> [-T <TAG>] [-p <PROJECTS>] [-R] [-U]"
+  echo "  -p <PROJECTS_TO_BUILD>  Projects to build; i.e. the string passed to"
+  echo "                          LLVM_ENABLE_PROJECTS. Defaults to 'all'."
+  echo "  -x <PROJECT_TO_EXCLUDE> Project(s) to exclude, if -p is not passed."
+  echo "                          Can be passed multiple times."
+  echo "  -C <CMAKE_STRING>       String to pass to the CMake command line."
   echo
-  echo "-s: Directory to which the source should be cloned to"
-  echo "    (excluding name of the repository directory; e.g. \$HOME/devel)."
-  echo "-t: Installation directory (e.g. '\$HOME/local/llvm-9.0.0')."
-  echo "-T: Git tag to check out (e.g. 'llvmorg-9.0.0')."
-  echo "-p: Projects to build, i.e. the string passed to LLVM_ENABLE_PROJECTS."
-  echo "    Defaults to 'all'."
-  echo "-x: Project to exclude, if -p is not passed. Can be passed multiple times."
-  echo "-C  String to pass to CMake command line"
+  echo "  -R                Perform Clang regression tests."
+  echo "  -U                Perform libc++ regression tests."
   echo
-  echo "-R: Perform Clang regression tests."
-  echo "-U: Perform libc++ regression tests."
-  echo
-  echo "-P: List possible projects after checking out the repository and then exit."
+  echo "  -P                List possible projects after checking out the"
+  echo "                    repository and then exit."
   echo
   echo "CC and CXX determine the compiler to be used."
 }
 
 while getopts ":s:b:t:T:p:x:C:RUPh" opt; do
   case ${opt} in
-    s) CLONE_DIR=$OPTARG ;;
-    t) INSTALL_DIR=$OPTARG ;;
-    T) GIT_TAG=$OPTARG ;;
-    p) PROJECTS_TO_BUILD=$OPTARG ;;
-    x) PROJECTS_TO_EXCLUDE+=("$OPTARG") ;;
-    C) SCRIPT_CMAKE_EXTRA_ARGUMENTS=$OPTARG ;;
-    R) TEST_CLANG=1 ;;
-    U) TEST_LIBCXX=1 ;;
-    P) LIST_POSSIBLE_PROJECTS=1 ;;
+    s) clone_dir=$OPTARG ;;
+    t) install_dir=$OPTARG ;;
+    T) git_tag=$OPTARG ;;
+    j) nr_cpus=$OPTARG ;;
+
+    p) projects_to_build=$OPTARG ;;
+    x) projects_to_exclude+=("$OPTARG") ;;
+    C) script_cmake_extra_arguments=$OPTARG ;;
+    R) test_clang=1 ;;
+    U) test_libcxx=1 ;;
+    P) list_possible_projects=1 ;;
+
     h) print_help; exit 0 ;;
-    :) echo "Option -$OPTARG requires an argument."; ARGERR=1 ;;
-    \?) echo "Invalid option -$OPTARG"; ARGERR=1 ;;
+    :) echo "Option -$OPTARG requires an argument."; arg_err=1 ;;
+    \?) echo "Invalid option -$OPTARG"; arg_err=1 ;;
   esac
 done
-[[ -z "$CLONE_DIR" ]] && { echo "Missing option -s"; ARGERR=1; }
-[[ -z "$INSTALL_DIR" ]] && { echo "Missing option -t"; ARGERR=1; }
-[[ "$PROJECTS_TO_EXCLUDE" ]] && [[ "$PROJECTS_TO_BUILD" ]] && { echo "-p and -x cannot be used together"; ARGERR=1; }
-[[ -z "$PROJECTS_TO_BUILD" ]] && { PROJECTS_TO_BUILD="all"; }
-[[ "$ARGERR" ]] && { print_help; exit 1; }
+[[ "$projects_to_exclude" ]] && [[ "$projects_to_build" ]] && { echo "-p and -x cannot be used together"; arg_err=1; }
+[[ -z "$projects_to_build" ]] && { projects_to_build="all"; }
+[[ "$arg_err" ]] && { print_help; exit 1; }
 
-REPO_DIR=${CLONE_DIR}/llvm-project
-echo "Cloning to ${REPO_DIR} and installing to ${INSTALL_DIR}..."
-set -e
+check_variables
+echo "- CC = ${CC}"
+echo "- CXX = ${CXX}"
+echo "- gccdir = ${gccdir}"
+echo
 
-CURRENT_DIR=$(pwd)
-
-# Clone and get to clean slate
-mkdir -p ${CLONE_DIR}
-git -C ${CLONE_DIR} clone https://github.com/llvm/llvm-project.git || true
-git -C ${REPO_DIR} reset HEAD --hard
-git -C ${REPO_DIR} clean -fxd
-git -C ${REPO_DIR} checkout master
-git -C ${REPO_DIR} pull --rebase
-
-# Use user-specified tag, if applicable
-if [[ ! -z "$GIT_TAG" ]]; then
-  echo "GIT_TAG=${GIT_TAG}"
-  git -C ${REPO_DIR} checkout ${GIT_TAG}
-fi
+check_swig_version
+clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
 
 # Try to get list of projects from CMake file
-PROJECTS_LIST_ALL=$(grep "^set(LLVM_ALL_PROJECTS" ${REPO_DIR}/llvm/CMakeLists.txt | cut -d\" -f2)
+projects_list_all=$(grep "^set(LLVM_ALL_PROJECTS" ${repo_dir}/llvm/CMakeLists.txt | cut -d\" -f2)
 
-if [[ "${LIST_POSSIBLE_PROJECTS}" ]]; then
+if [[ "${list_possible_projects}" ]]; then
   echo "-----"
   echo "Projects that will be passed to LLVM_ENABLE_PROJECTS with the default 'all':"
-  echo "${PROJECTS_LIST_ALL}"
+  echo "${projects_list_all}"
   exit 0
 fi
 
-if [[ "${PROJECTS_TO_EXCLUDE}" ]]; then
-  PROJECTS_TO_BUILD=${PROJECTS_LIST_ALL}
-  for projx in ${PROJECTS_TO_EXCLUDE[@]}; do
-    PROJECTS_TO_BUILD=${PROJECTS_TO_BUILD//$projx;}
+if [[ "${projects_to_exclude}" ]]; then
+  projects_to_build=${projects_list_all}
+  for projx in ${projects_to_exclude[@]}; do
+    projects_to_build=${projects_to_build//$projx;}
   done
 fi
 
-SWIG_EXE=$(which swig) || true
-if [[ -z "${SWIG_EXE}" ]]; then
-  echo "ERROR: SWIG was not found on the system. Please install SWIG, except"
-  echo "for versions 3.0.9 or 3.0.10, which are known to be incompatible with"
-  echo "lldb."
-  exit 0
-fi
-SWIG_VER=$(${SWIG_EXE} -version | grep SWIG | awk '{print $3}')
-if [[ "$SWIG_VER" == "3.0.9" ]] ||  [[ "$SWIG_VER" == "3.0.10" ]]; then
-  echo "ERROR: Swig versions 3.0.9 and 3.0.10 are incompatible with lldb."
-  echo "SWIG ${SWIG_VER} was found in ${SWIG_EXE}."
-  echo "Make sure you install a compatible version before compiling lldb."
-  exit 0
-fi
+echo
+echo "- projects_to_build = ${projects_to_build}"
 
-echo "CC=${CC}"
-echo "CXX=${CXX}"
-echo "REPO_DIR=${REPO_DIR}"
-echo "INSTALL_DIR=${INSTALL_DIR}"
-echo "PROJECTS_TO_BUILD=${PROJECTS_TO_BUILD}"
-echo "GCCDIR=${GCCDIR}"
-
-CMK_GENERATOR=""
+cmake_generator=""
 if [ $(which ninja) ]; then
-  CMK_GENERATOR="-G Ninja"
+  cmake_generator="-G Ninja"
 fi
 
 # Build LLVM project.
 
-BUILD_DIR=${REPO_DIR}/build
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
+build_dir=${repo_dir}/build
+mkdir -p ${build_dir}
+cd ${build_dir}
 
 set -x
 cmake \
-  ${CMK_GENERATOR} \
+  ${cmake_generator} \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-  -DSWIG_EXECUTABLE=${SWIG_EXE} \
-  -DLLVM_ENABLE_PROJECTS=${PROJECTS_TO_BUILD} \
+  -DCMAKE_INSTALL_PREFIX=${install_dir} \
+  -DSWIG_EXECUTABLE=${swig_exe} \
+  -DLLVM_ENABLE_PROJECTS=${projects_to_build} \
   -DLLVM_ENABLE_ASSERTIONS=OFF \
   -DLIBCXXABI_ENABLE_ASSERTIONS=OFF \
   -DLIBCXX_ENABLE_ASSERTIONS=OFF \
   -DLIBUNWIND_ENABLE_ASSERTIONS=OFF \
-  ${SCRIPT_CMAKE_EXTRA_ARGUMENTS} \
-  ${GCC_CMAKE_OPTION} \
-  ${REPO_DIR}/llvm
+  ${script_cmake_extra_arguments} \
+  ${gcc_cmake_option} \
+  ${repo_dir}/llvm
 set +x
 
-cmake --build . -j
+cmake --build . --parallel ${nr_cpus}
+[[ ! -z "${opt_clean_install_dir}" ]] && clean_install_dir ${install_dir}
 cmake --build . --target install/strip
 
 # Export relevant environment variables to be able to call Clang.
 
-export PATH=${INSTALL_DIR}/bin:$PATH
-export LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}
+export PATH=${install_dir}/bin:$PATH
+export LD_LIBRARY_PATH=${install_dir}/lib:${LD_LIBRARY_PATH}
 
 # Build libcxxabi using just built Clang.
 
-BUILD_DIR_LIBCXXABI=${REPO_DIR}/build-libcxxabi
-mkdir -p ${BUILD_DIR_LIBCXXABI}
-cd ${BUILD_DIR_LIBCXXABI}
+build_dir_libcxxabi=${repo_dir}/build-libcxxabi
+mkdir -p ${build_dir_libcxxabi}
+cd ${build_dir_libcxxabi}
 
-CC=${INSTALL_DIR}/bin/clang \
-  CXX=${INSTALL_DIR}/bin/clang++ \
+CC=${install_dir}/bin/clang \
+  CXX=${install_dir}/bin/clang++ \
   cmake \
-    ${CMK_GENERATOR} \
+    ${cmake_generator} \
     -DCMAKE_BUILD_TYPE=Release \
-    -DLIBCXXABI_LIBCXX_PATH=${REPO_DIR}/libcxx \
-    ${REPO_DIR}/libcxxabi
+    -DLIBCXXABI_LIBCXX_PATH=${repo_dir}/libcxx \
+    ${repo_dir}/libcxxabi
 
-cmake --build . -j
-mv lib/* ${INSTALL_DIR}/lib/
+cmake --build . --parallel ${nr_cpus}
+mv lib/* ${install_dir}/lib/
 
 # Build libcxx using just built Clang.
 
-BUILD_DIR_LIBCXX=${REPO_DIR}/build-libcxx
-mkdir -p ${BUILD_DIR_LIBCXX}
-cd ${BUILD_DIR_LIBCXX}
+build_dir_libcxx=${repo_dir}/build-libcxx
+mkdir -p ${build_dir_libcxx}
+cd ${build_dir_libcxx}
 
-CC=${INSTALL_DIR}/bin/clang \
-  CXX=${INSTALL_DIR}/bin/clang++ \
+CC=${install_dir}/bin/clang \
+  CXX=${install_dir}/bin/clang++ \
   cmake \
-    ${CMK_GENERATOR} \
+    ${cmake_generator} \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR} \
-    -DLLVM_PATH=${REPO_DIR}/llvm \
+    -DCMAKE_INSTALL_PREFIX=${install_dir} \
+    -DLLVM_PATH=${repo_dir}/llvm \
     -DLIBCXX_CXX_ABI=libcxxabi \
-    -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${REPO_DIR}/libcxxabi/include \
-    ${REPO_DIR}/libcxx
+    -DLIBCXX_CXX_ABI_INCLUDE_PATHS=${repo_dir}/libcxxabi/include \
+    ${repo_dir}/libcxx
 
-cmake --build . -j
+cmake --build . --parallel ${nr_cpus}
 cmake --build . --target install
 
 # Run tests, if desired
 
 set +e
 
-if [[ "${TEST_CLANG}" ]]; then
-  cd ${BUILD_DIR}
-  cmake --build . --target clang-test
+if [[ "${test_clang}" ]]; then
+  cd ${build_dir}
+  cmake --build . --parallel ${nr_cpus} --target clang-test
 fi
 
-if [[ "${TEST_LIBCXX}" ]]; then
-  cd ${BUILD_DIR_LIBCXX}
-  cmake --build . --target check-libcxx
+if [[ "${test_libcxx}" ]]; then
+  cd ${build_dir_libcxx}
+  cmake --build . --parallel ${nr_cpus} --target check-libcxx
 fi
-
-# Done.
-
-cd ${CURRENT_DIR}
