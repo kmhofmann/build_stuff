@@ -90,9 +90,9 @@ clone_or_update_repo()
 
   if [[ ! -d "${repo_dir}/.git" ]]; then
     git clone --recursive ${repo_url} ${repo_dir}
-  else
-    git -C ${repo_dir} fetch origin
   fi
+
+  git -C ${repo_dir} fetch origin
 
   if [[ "${git_tag}" == "__LATEST__" ]]; then
     echo "Determining latest Git release tag..."
