@@ -101,6 +101,7 @@ clone_or_update_repo()
 
   git -C ${repo_dir} clean -fxd
   git -C ${repo_dir} checkout ${git_tag}
+  git -C ${repo_dir} rebase FETCH_HEAD
   git -C ${repo_dir} submodule init
   git -C ${repo_dir} submodule update
 }
