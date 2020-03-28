@@ -1,5 +1,26 @@
 #!/usr/bin/env bash
 
+check_python_version() {
+  # Just check for the major version (2 or 3)
+  local python_major_version=$(python --version 2>&1 | cut -c8)
+
+  if [[ -z "${python_major_version}" ]]; then
+    echo "WARNING: Python not found. The CMake generation step will likely fail."
+  fi
+
+  if [[ "${python_major_version}" -eq "2" ]]; then
+    echo "--------------------------------------------------------------------------------"
+    echo "WARNING: `python --version` returns version 2."
+    echo "LLVM debuginfo-tests require Python 3 to be the default."
+    echo "Please execute this script from the Python 3 virtual environment."
+    echo "--------------------------------------------------------------------------------"
+    for ((i=5; i>0; --i)); do
+      echo -ne "\rContinuing in ${i}..."
+      sleep 1
+    done
+  fi
+}
+
 check_swig_version() {
   swig_exe=$(which swig) || true
   if [[ -z "${swig_exe}" ]]; then
