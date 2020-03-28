@@ -21,6 +21,8 @@ print_help()
   echo "                    (default: ${install_dir})"
   echo "  -T <TAG>          The Git repository tag that will be checked out."
   echo "                    (default: ${git_tag})"
+  echo "  -j <N>            Number of CPUs to use for building."
+  echo "                    (default: ${nr_cpus})"
   echo "  -C                Clean installation directory before installation"
   echo "                    step (POTENTIALLY DANGEROUS)."
   print_help_additional_options_description
@@ -95,13 +97,19 @@ clone_or_update_repo()
   git -C ${repo_dir} fetch origin
 
   if [[ "${git_tag}" == "__LATEST__" ]]; then
-    echo "Determining latest Git release tag..."
+    # Determine latest Git release tag
     git_tag=$(git -C ${repo_dir} describe --abbrev=0 --tags)
   fi
 
+  # Determine if tag describes a branch or not
+  is_branch=$(git -C ${repo_dir} show-ref refs/heads/${git_tag} || true)
+
+  #git -C ${repo_dir} reset HEAD --hard
   git -C ${repo_dir} clean -fxd
   git -C ${repo_dir} checkout ${git_tag}
-  git -C ${repo_dir} rebase FETCH_HEAD
+  if [[ -n "${is_branch}" ]]; then
+    git -C ${repo_dir} rebase FETCH_HEAD
+  fi
   git -C ${repo_dir} submodule init
   git -C ${repo_dir} submodule update
 }
