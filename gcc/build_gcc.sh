@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-example_version='9.2.0'
+example_version='10.1.0'
 example_tag='releases/gcc-'${example_version}
 
 kernel_name=$(uname -s)
@@ -29,7 +29,7 @@ print_help()
   echo "-B: Skip checking out sources and downloading prerequisites; only build and install."
   echo
   echo "Example:"
-  echo "  build_gcc -s ~/devel -t ~/local/gcc-${example_version} -T ${example_tag}"
+  echo "  ./build_gcc.sh -s ~/devel -t ~/local/gcc-${example_version} -T ${example_tag}"
 }
 
 if [[ $# -eq 0 ]]; then
