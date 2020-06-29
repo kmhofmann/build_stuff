@@ -46,6 +46,7 @@ done
 [[ -z "$install_dir" ]] && { echo "Missing option -t"; arg_err=1; }
 [[ ! -z "$arg_err" ]] && { print_help; exit 1; }
 
+repo_dir=${clone_dir}/${software_name}
 check_variables
 clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
 
