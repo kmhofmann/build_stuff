@@ -73,6 +73,7 @@ echo "- CXX = ${CXX}"
 echo "- gccdir = ${gccdir}"
 echo
 
+repo_dir=${clone_dir}/${software_name}
 check_python_version
 check_swig_version
 clone_or_update_repo ${git_uri} ${repo_dir} ${git_tag}
