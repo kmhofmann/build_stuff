@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
+# See https://github.com/MaskRay/ccls/wiki/Build#system-specific-notes
+#
 # Ubuntu 18.04:
 # sudo apt install clang clang-7 libclang-7-dev
 #
 # macOS: best to install with brew
 # brew install --HEAD ccls
+#
+# Arch Linux build (might fail due to lack of .so files, then do this):
+# cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/michael/local/ccls -DCLANG_LINK_CLANG_DYLIB=on -DLLVM_LINK_LLVM_DYLIB=on ..
 
 software_name="ccls"
 git_uri="https://github.com/MaskRay/ccls.git"
