@@ -3,7 +3,10 @@
 # Prerequisites, according to
 # https://github.com/JuliaLang/julia/blob/master/doc/build/build.md#required-build-tools-and-external-libraries
 #
+# Debian/Ubuntu:
 # $ sudo apt-get install build-essential libatomic1 python gfortran perl wget m4 cmake pkg-config
+# Arch Linux ARM:
+# $ sudo pacman -S base-devel python gcc-fortran perl wget m4 cmake pkg-config
 
 software_name="julia"
 git_uri="git://github.com/JuliaLang/julia.git"
